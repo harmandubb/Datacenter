@@ -7,6 +7,9 @@ async function googleCredentialsCheck(url = "http://localhost:8080", credentials
         method: 'POST',
         headers: {
             "Content-Type": "application/json",
+            // 'Access-Control-Allow-Origin': "*",
+            // 'Access-Control-Allow-Methods': ('POST', 'OPTIONS', 'HEAD', 'GET', 'PUT', 'DELETE'),
+            // 'Access-Control-Allow-Headers': ('Content-Type', 'Authorization'),
         },
         body: JSON.stringify(credentials),
     }
@@ -14,14 +17,20 @@ async function googleCredentialsCheck(url = "http://localhost:8080", credentials
     await fetch(url,options)
         .then((response) => {
             console.log("Fetch was sucessful:", response);
+            console.log("URL:", response.url);
+            console.log("Body:", response.body);
+
             if (response.status == 200){
                 console.log("Success");
             } else {
                 console.log("Fail");
             }
         })
-        .catch((err) =>
-            console.log("fetch returned an error:", err));
+        .catch((err) => {
+            console.log("An Error has occured"),
+            console.log("fetch returned an error:", err) }
+            );
+            
 
   }
   
@@ -32,7 +41,7 @@ const google = () => {
         <GoogleLogin
             onSuccess={credentialResponse => {
               console.log(credentialResponse);
-              googleCredentialsCheck(credentialResponse);
+              googleCredentialsCheck("http://localhost:8080", credentialResponse);
 
 
 
