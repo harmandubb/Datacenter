@@ -49,7 +49,7 @@ func handleRequest(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	fmt.Println("Content-Type:", r.Header.Get("Content-Type"))
+	// fmt.Println("Content-Type:", r.Header.Get("Content-Type"))
 
 	body, err := io.ReadAll(r.Body)
 	if err != nil {
@@ -65,7 +65,7 @@ func handleRequest(w http.ResponseWriter, r *http.Request) {
 
 	err = json.Unmarshal(body, &incomingMessage)
 
-	fmt.Println("JSON Message Struct:", incomingMessage)
+	// fmt.Println("JSON Message Struct:", incomingMessage)
 
 	//Error starts below this
 
@@ -75,7 +75,7 @@ func handleRequest(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	fmt.Println("Received data:", incomingMessage.Credential)
+	// fmt.Println("Received data:", incomingMessage.Credential)
 
 	//Error ends here
 
@@ -105,18 +105,6 @@ func handleRequest(w http.ResponseWriter, r *http.Request) {
 
 func main() {
 	fmt.Println("Set up server at 8080")
-	// http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-	// 	err := validateCSRFToken(r)
-	// 	if err != nil {
-	// 		http.Error(w, err.Error(), http.StatusBadRequest)
-	// 		return
-	// 	}
-
-	// 	// Handle the request if CSRF token is valid
-	// 	fmt.Fprint(w, "CSRF token is valid")
-	// })
-
-	// http.ListenAndServe(":8080", nil)
 
 	http.HandleFunc("/", handleRequest)
 
