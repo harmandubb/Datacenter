@@ -47,8 +47,8 @@ const google = () => {
     return (
         <GoogleLogin
             onSuccess={credentialResponse => {
-                // console.log("Below is the credential response");
-                // console.log(credentialResponse); 
+                console.log("Below is the credential response");
+                console.log(credentialResponse); 
                 googleCredentialsCheck("http://localhost:8080", credentialResponse);
 
 
