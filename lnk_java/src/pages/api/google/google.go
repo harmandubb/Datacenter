@@ -104,7 +104,7 @@ func verifyTokenSignature(idToken string) bool {
 	}
 
 	//print the payload (claims) of the verified ID token
-	// fmt.Printf("Verfied ID token Payload: %+v\n", payload)
+	fmt.Printf("Verfied ID token Payload: %+v\n", payload)
 	return true
 
 }
