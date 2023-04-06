@@ -63,9 +63,6 @@ const google = () => {
                 console.log("Below is the credential response");
                 console.log(credentialResponse); 
                 googleCredentialsCheck(router,"http://localhost:8080", credentialResponse);
-
-
-
             }}
             onError={() => {
               console.log('Login Failed');
