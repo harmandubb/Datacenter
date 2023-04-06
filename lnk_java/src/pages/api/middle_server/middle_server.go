@@ -14,15 +14,22 @@ func main() {
 	port := 22
 	username := "your_username"
 	password := "your_password"
-	// privateKey := []byte("<privatekey>")
+	pKey := []byte("<privatekey>")
 
-	// signer ssh.Signer
+	var signer ssh.Signer
+	var err error
+
+	signer, err = ssh.ParsePrivateKey(pKey)
+
+	if err != nil {
+		fmt.Println(err.Error())
+	}
 
 	// Configure SSH client
 	config := &ssh.ClientConfig{
 		User: username,
 		Auth: []ssh.AuthMethod{
-			ssh.Password(password),
+			ssh.PublicKeys(signer),
 		},
 		HostKeyCallback: ssh.InsecureIgnoreHostKey(),
 		Timeout:         10 * time.Second,
