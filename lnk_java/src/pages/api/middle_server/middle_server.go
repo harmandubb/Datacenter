@@ -10,26 +10,28 @@ import (
 )
 
 func main() {
-	host := "your_remote_server_address"
+	host := "192.168.1.175"
 	port := 22
-	username := "your_username"
-	password := "your_password"
-	pKey := []byte("<privatekey>")
+	username := "pi"
+	password := "4715"
 
-	var signer ssh.Signer
-	var err error
+	// pKey := []byte("<privatekey>")
 
-	signer, err = ssh.ParsePrivateKey(pKey)
+	// var signer ssh.Signer
+	// var err error
 
-	if err != nil {
-		fmt.Println(err.Error())
-	}
+	// signer, err = ssh.ParsePrivateKey(pKey)
+
+	// if err != nil {
+	// 	fmt.Println(err.Error())
+	// }
 
 	// Configure SSH client
 	config := &ssh.ClientConfig{
 		User: username,
 		Auth: []ssh.AuthMethod{
-			ssh.PublicKeys(signer),
+			ssh.Password(password),
+			// ssh.PublicKeys(signer),
 		},
 		HostKeyCallback: ssh.InsecureIgnoreHostKey(),
 		Timeout:         10 * time.Second,
@@ -43,15 +45,15 @@ func main() {
 	}
 	defer client.Close()
 
-	// Run a command on the remote server
-	cmd := "uname -a"
-	output, err := runCommand(client, cmd)
-	if err != nil {
-		log.Fatalf("Failed to run command: %s", err)
-	}
+	// // Run a command on the remote server
+	// cmd := "uname -a"
+	// output, err := runCommand(client, cmd)
+	// if err != nil {
+	// 	log.Fatalf("Failed to run command: %s", err)
+	// }
 
-	fmt.Println("Output:")
-	fmt.Println(output)
+	// fmt.Println("Output:")
+	// fmt.Println(output)
 }
 
 func runCommand(client *ssh.Client, cmd string) (string, error) {
