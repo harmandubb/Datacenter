@@ -39,21 +39,24 @@ func main() {
 
 	// Connect to the remote server
 	address := fmt.Sprintf("%s:%d", host, port)
+	fmt.Println(address)
 	client, err := ssh.Dial("tcp", address, config)
 	if err != nil {
 		log.Fatalf("Failed to connect: %s", err)
 	}
 	defer client.Close()
 
-	// // Run a command on the remote server
-	// cmd := "uname -a"
-	// output, err := runCommand(client, cmd)
-	// if err != nil {
-	// 	log.Fatalf("Failed to run command: %s", err)
-	// }
+	fmt.Println("I am here")
 
-	// fmt.Println("Output:")
-	// fmt.Println(output)
+	// Run a command on the remote server
+	cmd := "uname -a"
+	output, err := runCommand(client, cmd)
+	if err != nil {
+		log.Fatalf("Failed to run command: %s", err)
+	}
+
+	fmt.Println("Output:")
+	fmt.Println(output)
 }
 
 func runCommand(client *ssh.Client, cmd string) (string, error) {
