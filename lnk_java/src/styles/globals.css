@@ -85,11 +85,14 @@ body {
   overflow-x: hidden;
 }
 
+<<<<<<< HEAD
 #server_block {
   border: solid;
   padding: 10px;
 }
 
+=======
+>>>>>>> 675da4dbb7ac15ba19e6feef20195cc49b89daa9
 body {
   color: rgb(var(--foreground-rgb));
   background: linear-gradient(

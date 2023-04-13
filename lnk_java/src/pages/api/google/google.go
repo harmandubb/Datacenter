@@ -8,12 +8,17 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
+<<<<<<< HEAD
 	"os"
 	"reflect"
 
 	"google.golang.org/api/idtoken"
 
 	"github.com/mitchellh/mapstructure"
+=======
+
+	"google.golang.org/api/idtoken"
+>>>>>>> 675da4dbb7ac15ba19e6feef20195cc49b89daa9
 )
 
 // func validateCSRFToken(r *http.Request) error {
@@ -47,6 +52,7 @@ type LoginResponseMessage struct {
 	Verified bool `json:"verified"`
 }
 
+<<<<<<< HEAD
 type ServerData struct {
 	Host     string `json:"host"`
 	Port     string `json:"port"`
@@ -59,6 +65,8 @@ type GeneralServerData struct {
 	Status string `json:"status"`
 }
 
+=======
+>>>>>>> 675da4dbb7ac15ba19e6feef20195cc49b89daa9
 //----------TODO implement later-----------//
 // func checkCSRFToken(w http.ResponseWriter, r *http.Request) {
 
@@ -252,6 +260,7 @@ func handleRequest(w http.ResponseWriter, r *http.Request) {
 	w.Write(jsonResponse)
 }
 
+<<<<<<< HEAD
 func retriveEmailAssociatedServerInto(email string) map[string]interface{} {
 	//TODO: have a system where you can find what company is associated with an email and then determine the accesses that the user has
 	file, err := os.Open("server_info.json")
@@ -368,17 +377,22 @@ func retriveUserServerInfo(email string) {
 
 }
 
+=======
+>>>>>>> 675da4dbb7ac15ba19e6feef20195cc49b89daa9
 func main() {
 	fmt.Println("Set up server at 8080")
 
 	http.HandleFunc("/", handleLoginRequest)
 
+<<<<<<< HEAD
 	http.HandleFunc("/server", handleLoginRequest)
 
 	email_data := retriveEmailAssociatedServerInto("harmand1999@gmail.com")
 
 	getAllGeneralServerData(email_data)
 
+=======
+>>>>>>> 675da4dbb7ac15ba19e6feef20195cc49b89daa9
 	log.Fatal(http.ListenAndServe(":8080", nil))
 
 }
