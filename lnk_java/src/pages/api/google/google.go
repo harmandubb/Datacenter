@@ -65,9 +65,9 @@ type GeneralServerData struct {
 }
 
 type UserInfo struct {
-	Token  string                `json:"token"`
-	Expire time.Time             `json:"expire"`
-	Server map[string]ServerInfo `json:"-"`
+	Token   string                `json:"token"`
+	Expire  time.Time             `json:"expire"`
+	Servers map[string]ServerInfo `json:"servers"`
 }
 
 type ServerInfo struct {
@@ -389,7 +389,7 @@ func handleServerRequest(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var userInfo map[string]interface{}
+	var userInfo UserInfo
 
 	err = json.Unmarshal(jsonData, &userInfo)
 	if err != nil {
@@ -397,13 +397,16 @@ func handleServerRequest(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	servers := userInfo["servers"]
-
-	fmt.Println(servers["pi"])
-
-	for key, value := range userInfo["servers"] {
+	for serverName, server := range userInfo.Servers {
+		fmt.Printf("\nServer: %s\n", serverName)
+		fmt.Println("Host:", server.Host)
+		fmt.Println("User:", server.Username)
+		fmt.Println("Port:", server.Port)
+		fmt.Println("Pass:", server.Password)
 
 	}
+
+	//return a json file with the server infromation given
 }
 
 func findTokenUser(token string) string {
@@ -488,7 +491,7 @@ func retriveUserServerInfo(email string) {
 func main() {
 	fmt.Println("Set up server at 8080")
 
-	// http.HandleFunc("/", handleLoginRequest)
+	http.HandleFunc("/", handleLoginRequest)
 
 	http.HandleFunc("/server", handleServerRequest)
 

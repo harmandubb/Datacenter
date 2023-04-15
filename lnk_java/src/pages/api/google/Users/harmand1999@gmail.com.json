@@ -1,17 +1,18 @@
 {
-    "token": "",
-    "expire": "",
-    "pi" :{
-        "host" : "192.168.1.175",
-        "port" : "22",
-        "username" : "pi",
-        "password" : "4715"
+  "expire": "2023-04-15T02:13:18.546334-07:00",
+  "servers": {
+    "pi": {
+      "host": "192.168.1.175",
+      "password": "4715",
+      "port": "22",
+      "username": "pi"
     },
-
-    "raspberry" :{
-        "host" : "192.168.1.175",
-        "port" : "22",
-        "username" : "pi",
-        "password" : "4715"
+    "raspberry": {
+      "host": "192.168.1.175",
+      "password": "4715",
+      "port": "22",
+      "username": "pi"
     }
+  },
+  "token": "100b861c-db6d-11ed-903c-0c4de9cb1e33"
 }
