@@ -213,7 +213,7 @@ func updateSessionToken(fileName string, token string, expire time.Time) {
 		log.Fatal(err)
 	}
 
-	fmt.Println("JSON data modified successfully.")
+	// fmt.Println("JSON data modified successfully.")
 
 }
 
@@ -474,9 +474,7 @@ func retriveUserServerInfo(email string) {
 func main() {
 	fmt.Println("Set up server at 8080")
 
-	// createSessionToken()
-
-	// http.HandleFunc("/", handleLoginRequest)
+	http.HandleFunc("/", handleLoginRequest)
 
 	// http.HandleFunc("/server", handleLoginRequest)
 

@@ -7,22 +7,22 @@ import { CookiesProvider } from 'react-cookie';
 import { useCookies } from 'react-cookie';
 
 
-function setUserSessionToken(sessionToken){
-    const currentDateAndTime = new Date();
-    const expires = new Date(currentDateAndTime.getTime() + 5 * 60 * 1000);
+function setUserSessionToken(sessionToken, expireTime){
+    // const currentDateAndTime = new Date();
+    // const expires = new Date(currentDateAndTime.getTime() + 5 * 60 * 1000);
 
     let sessionObject = {
-        expiresAt: expires,
+        expiresAt: expireTime,
         token: sessionToken,
     }
 
-    sessionStorage.setItem("serverLNKSessionObject", JSON.stringify(sessionObject));
+    sessionStorage.setItem("serverLNKSession", JSON.stringify(sessionObject));
+    // sessionStorage.setItem("serverLNKSessionToken", "sessionToken");
+    // sessionStorage.setItem("serverLNKSessionExpirey", "expireTime");
 
 }
 
-function createSessionToken(){
-    sessionToke := uuid.New
-}
+
 
 
 async function googleCredentialsCheck(router ,url = "http://localhost:8080", credentials) {
@@ -54,13 +54,12 @@ async function googleCredentialsCheck(router ,url = "http://localhost:8080", cre
     // console.log("Options:",options)
     await fetch(url,options)
         .then((response) => {
-            console.log("Fetch was sucessful:", response)
-            setUserSessionToken(response.json().token); //TODO: write the back end logic to produce the session token
             return response.json();
         })
         .then((data) => {
             console.log("Server response:", data)
             if(data.verified){
+                setUserSessionToken(data.token, data.expire);
                 //redirect to the server page here
                 router.push('./server');
             } else {
