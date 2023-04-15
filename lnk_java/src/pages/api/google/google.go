@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"os"
 	"reflect"
+	"time"
 
 	"google.golang.org/api/idtoken"
 
@@ -46,20 +47,28 @@ type RequestMessage struct {
 }
 
 type LoginResponseMessage struct {
-	Verified bool   `json:"verified"`
-	Email    string `json:"email"`
-}
-
-type ServerData struct {
-	Host     string `json:"host"`
-	Port     string `json:"port"`
-	Username string `json:"Username"`
-	Password string `json:"Password"`
+	Verified bool      `json:"verified"`
+	Email    string    `json:"email"`
+	Token    string    `json:"token"`
+	Expire   time.Time `json:"expire"`
 }
 
 type GeneralServerData struct {
 	Name   string `json:"name"`
 	Status string `json:"status"`
+}
+
+type UserInfo struct {
+	Token  string                `json:"token"`
+	Expire string                `json:"expire"`
+	Server map[string]ServerInfo `json:"-"`
+}
+
+type ServerInfo struct {
+	Host     string `json:"host"`
+	Port     string `json:"port"`
+	Username string `json:"username"`
+	Password string `json:"password"`
 }
 
 //----------TODO implement later-----------//
@@ -128,21 +137,82 @@ func verifyTokenSignature(idToken string) (bool, string) {
 	return true, payload.Claims["email"].(string)
 }
 
-func createSessionToken() {
+func createSessionToken() (string, time.Time) {
 	sessionToken, err := uuid.NewUUID()
 	if err != nil {
 		fmt.Println("Error generating UUID:", err)
-		return
+		return "", time.Time{}
 	}
 
-	fmt.Println(sessionToken.string())
+	fmt.Println(sessionToken.String())
 
+	expire := generateExpiryTime()
+
+	return sessionToken.String(), expire
+
+}
+
+func generateExpiryTime() time.Time {
+	currentDateAndTime := time.Now()
+	newDateAndTime := currentDateAndTime.Add(5 * time.Minute)
+
+	// Log the new date and time
+	// fmt.Println("Current date and time:", currentDateAndTime)
+	// fmt.Println("New date and time (5 minutes later):", newDateAndTime)
+	// fmt.Println(reflect.TypeOf(currentDateAndTime))
+
+	return newDateAndTime
 }
 
 func enableCORS(w *http.ResponseWriter) {
 	(*w).Header().Set("Access-Control-Allow-Origin", "*")
 	(*w).Header().Set("Access-Control-Allow-Methods", "POST, GET, OPTIONS, PUT, DELETE")
 	(*w).Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
+}
+
+func updateSessionToken(fileName string, token string, expire string) {
+	file, err := os.Open(fileName)
+	if err != nil {
+		log.Fatal(err)
+		return
+	}
+
+	defer file.Close()
+
+	jsonData, err := ioutil.ReadAll(file)
+	if err != nil {
+		log.Fatal(err)
+		return
+	}
+
+	// var userInfo UserInfo
+
+	var userInfo map[string]interface{}
+
+	err = json.Unmarshal(jsonData, &userInfo)
+	if err != nil {
+		log.Fatal(err)
+		return
+	}
+
+	fmt.Println(userInfo["token"])
+	fmt.Println(userInfo["expire"])
+
+	userInfo["token"] = token
+	userInfo["expire"] = expire
+
+	modifiedJSON, err := json.MarshalIndent(userInfo, "", "  ")
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	err = ioutil.WriteFile(fileName, modifiedJSON, 0644)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	fmt.Println("JSON data modified successfully.")
+
 }
 
 func handleLoginRequest(w http.ResponseWriter, r *http.Request) {
@@ -180,7 +250,23 @@ func handleLoginRequest(w http.ResponseWriter, r *http.Request) {
 	verified, email := verifyTokenSignature(loginMessage.Credential)
 
 	loginResponseMessage.Verified = verified
-	loginResponseMessage.Email = email
+
+	if verified {
+		//success case
+		loginResponseMessage.Email = email
+		token, expireTime := createSessionToken()
+		loginResponseMessage.Token = token
+		loginResponseMessage.Expire = expireTime
+
+		//link the session token with the server json file
+
+	} else {
+		//fail case
+		loginResponseMessage.Email = ""
+		loginResponseMessage.Token = ""
+		loginResponseMessage.Expire = time.Time{}
+
+	}
 
 	// Your normal request handling logic goes here
 	w.Header().Set("Content-Type", "application/json")
@@ -371,7 +457,7 @@ func retriveUserServerInfo(email string) {
 		serverData := servers.(map[string]interface{})
 		fmt.Printf("Server %v data %v\n", key, serverData)
 
-		var data ServerData
+		var data ServerInfo
 		err := mapstructure.Decode(serverData, &data)
 		if err != nil {
 			log.Fatal(err)
@@ -386,7 +472,11 @@ func retriveUserServerInfo(email string) {
 func main() {
 	fmt.Println("Set up server at 8080")
 
-	createSessionToken()
+	// createSessionToken()
+
+	// updateSessionToken("hdubb1.ubc@gmail.com.json", "test", "test")
+
+	generateExpiryTime()
 
 	// http.HandleFunc("/", handleLoginRequest)
 

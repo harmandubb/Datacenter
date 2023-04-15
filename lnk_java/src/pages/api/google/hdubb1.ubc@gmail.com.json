@@ -1,0 +1,10 @@
+{
+  "expire": "test",
+  "pi": {
+    "host": "192.168.1.175",
+    "password": "4715",
+    "port": "22",
+    "username": "pi"
+  },
+  "token": "test"
+}
