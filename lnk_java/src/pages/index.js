@@ -4,11 +4,7 @@ import Script from 'next/script'
 import { Inter } from 'next/font/google'
 import styles from '@/styles/Home.module.css'
 import { useEffectm, useRef, Suspense } from 'react'
-<<<<<<< HEAD
 // import loadable from '@loadable/component'
-=======
-import loadable from '@loadable/component'
->>>>>>> 675da4dbb7ac15ba19e6feef20195cc49b89daa9
 import { GoogleLogin } from '@react-oauth/google'
 
 import Google from './google'

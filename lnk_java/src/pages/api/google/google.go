@@ -8,17 +8,14 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
-<<<<<<< HEAD
 	"os"
 	"reflect"
 
 	"google.golang.org/api/idtoken"
 
 	"github.com/mitchellh/mapstructure"
-=======
 
-	"google.golang.org/api/idtoken"
->>>>>>> 675da4dbb7ac15ba19e6feef20195cc49b89daa9
+	"github.com/google/uuid"
 )
 
 // func validateCSRFToken(r *http.Request) error {
@@ -49,10 +46,10 @@ type RequestMessage struct {
 }
 
 type LoginResponseMessage struct {
-	Verified bool `json:"verified"`
+	Verified bool   `json:"verified"`
+	Email    string `json:"email"`
 }
 
-<<<<<<< HEAD
 type ServerData struct {
 	Host     string `json:"host"`
 	Port     string `json:"port"`
@@ -65,8 +62,6 @@ type GeneralServerData struct {
 	Status string `json:"status"`
 }
 
-=======
->>>>>>> 675da4dbb7ac15ba19e6feef20195cc49b89daa9
 //----------TODO implement later-----------//
 // func checkCSRFToken(w http.ResponseWriter, r *http.Request) {
 
@@ -111,25 +106,36 @@ func retrivePublicGoogleKey() {
 	fmt.Println(string(body))
 }
 
-func verifyTokenSignature(idToken string) bool {
+func verifyTokenSignature(idToken string) (bool, string) {
 	clientID := "228928618151-a4lio74eijrst1fomvd46thcisdclqan.apps.googleusercontent.com"
 
 	verifier, err := idtoken.NewValidator(context.Background())
 	if err != nil {
 		log.Fatal("Failed to creater verifier: %v", err)
-		return false
+		return false, ""
 	}
 
 	//Verify the ID token
 	payload, err := verifier.Validate(context.Background(), idToken, clientID)
 	if err != nil {
 		log.Fatal("Failed to verify ID token: %v", err)
-		return false
+		return false, ""
 	}
 
 	//print the payload (claims) of the verified ID token
 	fmt.Printf("Verfied ID token Payload: %+v\n", payload)
-	return true
+	fmt.Printf("\n Type of the payload: %v\n", reflect.TypeOf((payload.Claims["email"])))
+	return true, payload.Claims["email"].(string)
+}
+
+func createSessionToken() {
+	sessionToken, err := uuid.NewUUID()
+	if err != nil {
+		fmt.Println("Error generating UUID:", err)
+		return
+	}
+
+	fmt.Println(sessionToken.string())
 
 }
 
@@ -171,9 +177,10 @@ func handleLoginRequest(w http.ResponseWriter, r *http.Request) {
 
 	var loginResponseMessage LoginResponseMessage
 
-	verified := verifyTokenSignature(loginMessage.Credential)
+	verified, email := verifyTokenSignature(loginMessage.Credential)
 
 	loginResponseMessage.Verified = verified
+	loginResponseMessage.Email = email
 
 	// Your normal request handling logic goes here
 	w.Header().Set("Content-Type", "application/json")
@@ -260,7 +267,6 @@ func handleRequest(w http.ResponseWriter, r *http.Request) {
 	w.Write(jsonResponse)
 }
 
-<<<<<<< HEAD
 func retriveEmailAssociatedServerInto(email string) map[string]interface{} {
 	//TODO: have a system where you can find what company is associated with an email and then determine the accesses that the user has
 	file, err := os.Open("server_info.json")
@@ -332,8 +338,8 @@ func handleServerRequest(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	email_data := retriveEmailAssociatedServerInto(email)
-	json_data := getAllGeneralServerData(email_data)
+	// email_data := retriveEmailAssociatedServerInto(email)
+	// json_data := getAllGeneralServerData(email_data)
 
 }
 
@@ -377,22 +383,19 @@ func retriveUserServerInfo(email string) {
 
 }
 
-=======
->>>>>>> 675da4dbb7ac15ba19e6feef20195cc49b89daa9
 func main() {
 	fmt.Println("Set up server at 8080")
 
-	http.HandleFunc("/", handleLoginRequest)
+	createSessionToken()
 
-<<<<<<< HEAD
-	http.HandleFunc("/server", handleLoginRequest)
+	// http.HandleFunc("/", handleLoginRequest)
 
-	email_data := retriveEmailAssociatedServerInto("harmand1999@gmail.com")
+	// http.HandleFunc("/server", handleLoginRequest)
 
-	getAllGeneralServerData(email_data)
+	// email_data := retriveEmailAssociatedServerInto("harmand1999@gmail.com")
 
-=======
->>>>>>> 675da4dbb7ac15ba19e6feef20195cc49b89daa9
+	// getAllGeneralServerData(email_data)
+
 	log.Fatal(http.ListenAndServe(":8080", nil))
 
 }

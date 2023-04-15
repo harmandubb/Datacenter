@@ -10,11 +10,7 @@ import (
 )
 
 func main() {
-<<<<<<< HEAD
 	host := "192.168.1.175" //TODO: pull credentails from a data base server to pupolaute based on the server that one wants to acceses.
-=======
-	host := "192.168.1.175"
->>>>>>> 675da4dbb7ac15ba19e6feef20195cc49b89daa9
 	port := 22
 	username := "pi"
 	password := "4715"
@@ -37,11 +33,7 @@ func main() {
 			ssh.Password(password),
 			// ssh.PublicKeys(signer),
 		},
-<<<<<<< HEAD
 		HostKeyCallback: ssh.InsecureIgnoreHostKey(), //TODO:create security around this to make sure that middle man attack cannot occur.
-=======
-		HostKeyCallback: ssh.InsecureIgnoreHostKey(),
->>>>>>> 675da4dbb7ac15ba19e6feef20195cc49b89daa9
 		Timeout:         10 * time.Second,
 	}
 

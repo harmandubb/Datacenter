@@ -9,6 +9,8 @@ const ServerInfo = () => {
     const fetchServerInfo = async () => {
       try {
         const response = await fetch('https://your-api-url.com/server-info');
+        //Here I can send another request to the server given the infromation that I have gained 
+        //TODO: Figure out how I can store the token where this component can acceses a unique identifier
         const data = await response.json();
         setServerName(data.serverName);
         setServerStatus(data.serverStatus);
