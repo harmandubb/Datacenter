@@ -60,7 +60,7 @@ type GeneralServerData struct {
 
 type UserInfo struct {
 	Token  string                `json:"token"`
-	Expire string                `json:"expire"`
+	Expire time.Time             `json:"expire"`
 	Server map[string]ServerInfo `json:"-"`
 }
 
@@ -70,6 +70,8 @@ type ServerInfo struct {
 	Username string `json:"username"`
 	Password string `json:"password"`
 }
+
+const expireTimeOffset = 5
 
 //----------TODO implement later-----------//
 // func checkCSRFToken(w http.ResponseWriter, r *http.Request) {
@@ -154,7 +156,7 @@ func createSessionToken() (string, time.Time) {
 
 func generateExpiryTime() time.Time {
 	currentDateAndTime := time.Now()
-	newDateAndTime := currentDateAndTime.Add(5 * time.Minute)
+	newDateAndTime := currentDateAndTime.Add(expireTimeOffset * time.Minute)
 
 	// Log the new date and time
 	// fmt.Println("Current date and time:", currentDateAndTime)
@@ -170,7 +172,7 @@ func enableCORS(w *http.ResponseWriter) {
 	(*w).Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
 }
 
-func updateSessionToken(fileName string, token string, expire string) {
+func updateSessionToken(fileName string, token string, expire time.Time) {
 	file, err := os.Open(fileName)
 	if err != nil {
 		log.Fatal(err)
@@ -259,7 +261,7 @@ func handleLoginRequest(w http.ResponseWriter, r *http.Request) {
 		loginResponseMessage.Expire = expireTime
 
 		//link the session token with the server json file
-
+		updateSessionToken(email+".json", token, expireTime)
 	} else {
 		//fail case
 		loginResponseMessage.Email = ""
@@ -473,10 +475,6 @@ func main() {
 	fmt.Println("Set up server at 8080")
 
 	// createSessionToken()
-
-	// updateSessionToken("hdubb1.ubc@gmail.com.json", "test", "test")
-
-	generateExpiryTime()
 
 	// http.HandleFunc("/", handleLoginRequest)
 
