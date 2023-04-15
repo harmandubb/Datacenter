@@ -17,6 +17,8 @@ import (
 	"github.com/mitchellh/mapstructure"
 
 	"github.com/google/uuid"
+
+	"path/filepath"
 )
 
 // func validateCSRFToken(r *http.Request) error {
@@ -44,6 +46,10 @@ type ResponseMessage struct {
 
 type RequestMessage struct {
 	Credential string `json:"credential"`
+}
+
+type ServerRequestMessage struct {
+	Token string `json:"token"`
 }
 
 type LoginResponseMessage struct {
@@ -261,7 +267,7 @@ func handleLoginRequest(w http.ResponseWriter, r *http.Request) {
 		loginResponseMessage.Expire = expireTime
 
 		//link the session token with the server json file
-		updateSessionToken(email+".json", token, expireTime)
+		updateSessionToken("./Users/"+email+".json", token, expireTime)
 	} else {
 		//fail case
 		loginResponseMessage.Email = ""
@@ -283,76 +289,6 @@ func handleLoginRequest(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 	w.Write(jsonResponse)
 
-}
-
-func handleRequest(w http.ResponseWriter, r *http.Request) {
-	enableCORS(&w)
-
-	if r.Method == "OPTIONS" {
-		w.WriteHeader(http.StatusNoContent)
-		return
-	}
-
-	if r.Method != http.MethodPost {
-		http.Error(w, "Only POST method is allowed", http.StatusMethodNotAllowed)
-		return
-	}
-
-	//check if the request had been conpromised
-	// checkCSRFToken(w, r)
-
-	// fmt.Println("Content-Type:", r.Header.Get("Content-Type"))
-
-	body, err := io.ReadAll(r.Body)
-	if err != nil {
-		http.Error(w, "Error reading request body", http.StatusInternalServerError)
-		return
-	}
-
-	defer r.Body.Close()
-
-	// fmt.Println("Request body:", string(body))
-
-	var incomingMessage RequestMessage
-
-	err = json.Unmarshal(body, &incomingMessage)
-
-	// fmt.Println("JSON Message Struct:", incomingMessage)
-
-	//Error starts below this
-
-	if err != nil {
-		fmt.Println("Error parsing JSON data:", err)
-		http.Error(w, "Error parsing JSON data", http.StatusBadRequest)
-		return
-	}
-
-	// fmt.Println("Received data:", incomingMessage.Credential)
-
-	//Error ends here
-
-	// if r.Method != http.MethodPost {
-	// 	http.Error(w, "Only POST method is allowed", http.StatusMethodNotAllowed)
-	// 	return
-	// }
-
-	// Your normal request handling logic goes here
-	w.Header().Set("Content-Type", "application/json")
-
-	responseMessage := ResponseMessage{
-		Status:  "Success",
-		Message: "Does this work?",
-	}
-
-	jsonResponse, err := json.Marshal(responseMessage)
-
-	if err != nil {
-		http.Error(w, "Error generating JSON response", http.StatusInternalServerError)
-		return
-	}
-
-	w.WriteHeader(http.StatusOK)
-	w.Write(jsonResponse)
 }
 
 func retriveEmailAssociatedServerInto(email string) map[string]interface{} {
@@ -426,9 +362,87 @@ func handleServerRequest(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// email_data := retriveEmailAssociatedServerInto(email)
-	// json_data := getAllGeneralServerData(email_data)
+	body, err := io.ReadAll(r.Body)
+	if err != nil {
+		http.Error(w, "Error reading request body", http.StatusInternalServerError)
+		return
+	}
 
+	defer r.Body.Close()
+
+	var serverRequestMessage ServerRequestMessage
+
+	err = json.Unmarshal(body, &serverRequestMessage)
+
+	if err != nil {
+		http.Error(w, "Error parsing JSON data", http.StatusBadRequest)
+		return
+	}
+
+	serverPath := findTokenUser(serverRequestMessage.Token)
+
+	//Now extract the infromation needed from the json file to be sent out:
+
+	jsonData, err := ioutil.ReadFile(serverPath)
+	if err != nil {
+		fmt.Printf("Error reading file %s: %v\n", serverPath, err)
+		return
+	}
+
+	var userInfo map[string]interface{}
+
+	err = json.Unmarshal(jsonData, &userInfo)
+	if err != nil {
+		log.Fatal(err)
+		return
+	}
+
+	servers := userInfo["servers"]
+
+	fmt.Println(servers["pi"])
+
+	for key, value := range userInfo["servers"] {
+
+	}
+}
+
+func findTokenUser(token string) string {
+	dir := "./Users" // Replace with the path to your folder
+
+	files, err := ioutil.ReadDir(dir)
+	if err != nil {
+		fmt.Printf("Error reading the directory: %v\n", err)
+		return ""
+	}
+
+	for _, file := range files {
+		if !file.IsDir() {
+			filePath := filepath.Join(dir, file.Name())
+
+			jsonData, err := ioutil.ReadFile(filePath)
+			if err != nil {
+				fmt.Printf("Error reading file %s: %v\n", filePath, err)
+				return ""
+			}
+
+			var userInfo map[string]interface{}
+
+			err = json.Unmarshal(jsonData, &userInfo)
+			if err != nil {
+				log.Fatal(err)
+				return ""
+			}
+
+			fmt.Println(userInfo["token"])
+
+			if userInfo["token"] == token {
+				return filePath
+			}
+
+		}
+	}
+
+	return ""
 }
 
 func retriveUserServerInfo(email string) {
@@ -474,9 +488,11 @@ func retriveUserServerInfo(email string) {
 func main() {
 	fmt.Println("Set up server at 8080")
 
-	http.HandleFunc("/", handleLoginRequest)
+	// http.HandleFunc("/", handleLoginRequest)
 
-	// http.HandleFunc("/server", handleLoginRequest)
+	http.HandleFunc("/server", handleServerRequest)
+
+	// fmt.Println(findTokenUser("06e207fa-db59-11ed-9ddf-0c4de9cb1e33"))
 
 	// email_data := retriveEmailAssociatedServerInto("harmand1999@gmail.com")
 
