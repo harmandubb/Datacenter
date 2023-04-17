@@ -59,11 +59,6 @@ type LoginResponseMessage struct {
 	Expire   time.Time `json:"expire"`
 }
 
-type GeneralServerData struct {
-	Name   string `json:"name"`
-	Status string `json:"status"`
-}
-
 type UserInfo struct {
 	Token   string                `json:"token"`
 	Expire  time.Time             `json:"expire"`
@@ -77,33 +72,14 @@ type ServerInfo struct {
 	Password string `json:"password"`
 }
 
+type GeneralServerInfo struct {
+	Status string `json:"status` //TODO: Implement code that checks the status of the server
+	Name   string `json:"status`
+}
+
+type GeneralInfoAllServers map[string]GeneralServerInfo
+
 const expireTimeOffset = 5
-
-//----------TODO implement later-----------//
-// func checkCSRFToken(w http.ResponseWriter, r *http.Request) {
-
-// 	csrfTokenCookie, err := r.Cookie("g_csrf_token") //where is this cookie
-
-// 	fmt.Println("Cookie Token:", csrfTokenCookie)
-// 	fmt.Println("Error:", err)
-
-// 	if err != nil {
-// 		http.Error(w, "No CSRF token in Cookie.", http.StatusBadRequest)
-// 		return
-// 	}
-
-// 	// csrfTokenBody := r.FormValue("g_csrf_token")
-// 	// if csrfTokenBody == "" {
-// 	// 	http.Error(w, "No CSRF token in post body.", http.StatusBadRequest)
-// 	// 	return
-// 	// }
-
-// 	// if csrfTokenCookie.Value != csrfTokenBody {
-// 	// 	http.Error(w, "Failed to verify double submit cookie.", http.StatusBadRequest)
-// 	// 	return
-// 	// }
-
-// }
 
 func retrivePublicGoogleKey() {
 	url := "https://www.googleapis.com/oauth2/v3/certs"
@@ -322,7 +298,7 @@ func getAllGeneralServerData(email_data map[string]interface{}) []byte {
 	//general serever data refers to data that somone is able to see on the general log in page
 	//Example: server name and status
 
-	servers_data := []GeneralServerData{}
+	servers_data := []GeneralServerInfo{}
 
 	for key, servers := range email_data {
 		serverData := servers.(map[string]interface{})
@@ -330,7 +306,7 @@ func getAllGeneralServerData(email_data map[string]interface{}) []byte {
 
 		fmt.Printf("Type of Key: %v\n", reflect.TypeOf(key))
 
-		generalServerData := GeneralServerData{
+		generalServerData := GeneralServerInfo{
 			Name:   key,
 			Status: "OK",
 		}
@@ -379,6 +355,8 @@ func handleServerRequest(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	//TODO: Check if the token expirey is still valid on the server end. If not then force the website to load again
+
 	serverPath := findTokenUser(serverRequestMessage.Token)
 
 	//Now extract the infromation needed from the json file to be sent out:
@@ -397,16 +375,39 @@ func handleServerRequest(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	for serverName, server := range userInfo.Servers {
-		fmt.Printf("\nServer: %s\n", serverName)
-		fmt.Println("Host:", server.Host)
-		fmt.Println("User:", server.Username)
-		fmt.Println("Port:", server.Port)
-		fmt.Println("Pass:", server.Password)
+	var generalServerInfoAll []GeneralServerInfo
+	// var generalServerInfo GeneralServerInfo
 
+	for serverName, server := range userInfo.Servers {
+		var generalServerInfo GeneralServerInfo
+
+		generalServerInfo.Name = serverName
+		generalServerInfo.Status = "OK"
+
+		generalServerInfoAll = append(generalServerInfoAll, generalServerInfo)
+
+		// fmt.Printf("\nServer: %s\n", serverName)
+		fmt.Println("Host:", server.Host)
+		// fmt.Println("User:", server.Username)
+		// fmt.Println("Port:", server.Port)
+		// fmt.Println("Pass:", server.Password)
 	}
 
 	//return a json file with the server infromation given
+	fmt.Println("Json data:", generalServerInfoAll) //Might have to change the structure if the JSON data labels are not put in
+
+	generalServerInfoResponse, err := json.Marshal(generalServerInfoAll)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	fmt.Println("Prining JSON File:")
+	fmt.Println(json.MarshalIndent(generalServerInfoResponse, "", "    "))
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	w.Write(generalServerInfoResponse)
+
 }
 
 func findTokenUser(token string) string {

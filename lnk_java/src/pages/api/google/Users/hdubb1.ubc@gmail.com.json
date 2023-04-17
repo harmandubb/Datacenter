@@ -1,6 +1,6 @@
 {
-  "expire": "2023-04-14T23:49:53.240367-07:00",
-  "servers":{
+  "expire": "2023-04-16T21:56:36.254711-07:00",
+  "servers": {
     "pi": {
       "host": "192.168.1.175",
       "password": "4715",
@@ -8,6 +8,5 @@
       "username": "pi"
     }
   },
-  
-  "token": "06e207fa-db59-11ed-9ddf-0c4de9cb1e33"
+  "token": "8863d988-dcdb-11ed-9418-0c4de9cb1e33"
 }

@@ -57,7 +57,7 @@ async function googleCredentialsCheck(router ,url = "http://localhost:8080", cre
             return response.json();
         })
         .then((data) => {
-            console.log("Server response:", data)
+            console.log("Server response in google:", data)
             if(data.verified){
                 setUserSessionToken(data.token, data.expire);
                 //redirect to the server page here

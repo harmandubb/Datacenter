@@ -29,14 +29,12 @@ const ServerInfo = () => {
 
        await fetch(url,options)
             .then((response) => {
-              const data = response;
-              
-              console.log("Server Name:",data.serverName);
-              console.log("Server Status:", data.serverStatus);
-
-              setServerName(data.serverName);
-              setServerStatus(data.serverStatus);
-            })
+              console.log("Raw response data:", response);
+              return response.json();
+            }).then((data) => {
+              console.log("Parsed data",data);
+              console.log(data);
+            }) 
 
       } catch (error) {
         console.error('Error fetching server info:', error);
