@@ -435,7 +435,7 @@ func main() {
 
 	http.HandleFunc("/", handleLoginRequest)
 
-	http.HandleFunc("/server", handleServerRequest)
+	http.HandleFunc("/server", handleServerRequest) //TODO: Only recreate the token once and see if the expire time dictates that the token needs to be created again.
 
 	// fmt.Println(findTokenUser("06e207fa-db59-11ed-9ddf-0c4de9cb1e33"))
 
