@@ -116,8 +116,8 @@ func verifyTokenSignature(idToken string) (bool, string) {
 	}
 
 	//print the payload (claims) of the verified ID token
-	fmt.Printf("Verfied ID token Payload: %+v\n", payload)
-	fmt.Printf("\n Type of the payload: %v\n", reflect.TypeOf((payload.Claims["email"])))
+	// fmt.Printf("Verfied ID token Payload: %+v\n", payload)
+	// fmt.Printf("\n Type of the payload: %v\n", reflect.TypeOf((payload.Claims["email"])))
 	return true, payload.Claims["email"].(string)
 }
 
@@ -267,66 +267,10 @@ func handleLoginRequest(w http.ResponseWriter, r *http.Request) {
 
 }
 
-func retriveEmailAssociatedServerInto(email string) map[string]interface{} {
-	//TODO: have a system where you can find what company is associated with an email and then determine the accesses that the user has
-	file, err := os.Open("server_info.json")
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	defer file.Close()
-
-	//read the file content into a byte slice
-	byteValue, err := ioutil.ReadAll(file)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	//unmarshel the JSON content into a map[string]interface()
-	var total_data map[string]interface{}
-	json.Unmarshal(byteValue, &total_data)
-
-	email_data := total_data[email].(map[string]interface{})
-
-	// fmt.Printf("This is the data associated with the user: %v\n", email_data)
-	// fmt.Printf("This is the type of the data: %v\n", reflect.TypeOf(email_data))
-
-	return email_data
-}
-
-func getAllGeneralServerData(email_data map[string]interface{}) []byte {
-	//general serever data refers to data that somone is able to see on the general log in page
-	//Example: server name and status
-
-	servers_data := []GeneralServerInfo{}
-
-	for key, servers := range email_data {
-		serverData := servers.(map[string]interface{})
-		fmt.Printf("Server %v data %v\n", key, serverData)
-
-		fmt.Printf("Type of Key: %v\n", reflect.TypeOf(key))
-
-		generalServerData := GeneralServerInfo{
-			Name:   key,
-			Status: "OK",
-		}
-
-		servers_data = append(servers_data, generalServerData)
-
-	}
-
-	json_servers_data, err := json.Marshal(servers_data)
-
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	return json_servers_data
-
-}
-
 func handleServerRequest(w http.ResponseWriter, r *http.Request) {
 	enableCORS(&w)
+
+	fmt.Println("Inthe Server Request Funciton")
 
 	if r.Method == "OPTIONS" {
 		w.WriteHeader(http.StatusNoContent)
@@ -378,7 +322,7 @@ func handleServerRequest(w http.ResponseWriter, r *http.Request) {
 	var generalServerInfoAll []GeneralServerInfo
 	// var generalServerInfo GeneralServerInfo
 
-	for serverName, server := range userInfo.Servers {
+	for serverName := range userInfo.Servers {
 		var generalServerInfo GeneralServerInfo
 
 		generalServerInfo.Name = serverName
@@ -387,22 +331,19 @@ func handleServerRequest(w http.ResponseWriter, r *http.Request) {
 		generalServerInfoAll = append(generalServerInfoAll, generalServerInfo)
 
 		// fmt.Printf("\nServer: %s\n", serverName)
-		fmt.Println("Host:", server.Host)
+		// fmt.Println("Host:", server.Host)
 		// fmt.Println("User:", server.Username)
 		// fmt.Println("Port:", server.Port)
 		// fmt.Println("Pass:", server.Password)
 	}
 
 	//return a json file with the server infromation given
-	fmt.Println("Json data:", generalServerInfoAll) //Might have to change the structure if the JSON data labels are not put in
+	// fmt.Println("Json data:", generalServerInfoAll) //Might have to change the structure if the JSON data labels are not put in
 
 	generalServerInfoResponse, err := json.Marshal(generalServerInfoAll)
 	if err != nil {
 		log.Fatal(err)
 	}
-
-	fmt.Println("Prining JSON File:")
-	fmt.Println(json.MarshalIndent(generalServerInfoResponse, "", "    "))
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
@@ -437,7 +378,7 @@ func findTokenUser(token string) string {
 				return ""
 			}
 
-			fmt.Println(userInfo["token"])
+			// fmt.Println(userInfo["token"])
 
 			if userInfo["token"] == token {
 				return filePath
