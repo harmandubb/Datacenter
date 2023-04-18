@@ -15,6 +15,11 @@ func main() {
 	username := "pi"
 	password := "4715"
 
+	fmt.Println("Host:", host)
+	fmt.Println("Port:", port)
+	fmt.Println("Username:", username)
+	fmt.Println("Password:", password)
+
 	// pKey := []byte("<privatekey>")
 
 	// var signer ssh.Signer

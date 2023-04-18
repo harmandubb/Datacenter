@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -19,6 +20,8 @@ import (
 	"github.com/google/uuid"
 
 	"path/filepath"
+
+	"golang.org/x/crypto/ssh"
 )
 
 // func validateCSRFToken(r *http.Request) error {
@@ -78,6 +81,11 @@ type GeneralServerInfo struct {
 }
 
 type GeneralInfoAllServers map[string]GeneralServerInfo
+
+type AccessServerInfo struct {
+	Name  string `json:"status`
+	Token string `json:"token"` //TODO: Implement the expire data mechansims in this struct after
+}
 
 const expireTimeOffset = 5
 
@@ -430,12 +438,132 @@ func retriveUserServerInfo(email string) {
 
 }
 
+func establishConnection(h string, p string, user string, pass string) *ssh.Client {
+	host := h //TODO: pull credentails from a data base server to pupolaute based on the server that one wants to acceses.
+	port := p
+	username := user
+	password := pass
+
+	fmt.Println("Host:", host)
+	fmt.Println("Port:", port)
+	fmt.Println("Username:", username)
+	fmt.Println("Password:", password)
+
+	// Configure SSH client
+	config := &ssh.ClientConfig{
+		User: username,
+		Auth: []ssh.AuthMethod{
+			ssh.Password(password),
+			// ssh.PublicKeys(signer),
+		},
+		HostKeyCallback: ssh.InsecureIgnoreHostKey(), //TODO:create security around this to make sure that middle man attack cannot occur.
+		Timeout:         10 * time.Second,
+	}
+
+	// Connect to the remote server
+	address := fmt.Sprintf("%s:%s", host, port)
+	fmt.Println(address)
+	client, err := ssh.Dial("tcp", address, config)
+	if err != nil {
+		log.Fatalf("Failed to connect: %s", err)
+	}
+	defer client.Close()
+
+	return client
+
+}
+
+func runCommand(client *ssh.Client, cmd string) (string, error) {
+	session, err := client.NewSession()
+	if err != nil {
+		return "", err
+	}
+	defer session.Close()
+
+	var stdoutBuf bytes.Buffer
+	session.Stdout = &stdoutBuf
+
+	err = session.Run(cmd)
+	if err != nil {
+		return "", err
+	}
+
+	return stdoutBuf.String(), nil
+}
+
+func handleAccessRequest(w http.ResponseWriter, r *http.Request) {
+	enableCORS(&w)
+
+	fmt.Println("Inthe Access Request Funciton")
+
+	if r.Method == "OPTIONS" {
+		w.WriteHeader(http.StatusNoContent)
+		return
+	}
+
+	if r.Method != http.MethodPost {
+		http.Error(w, "Only POST method is allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	body, err := io.ReadAll(r.Body)
+	if err != nil {
+		http.Error(w, "Error reading request body", http.StatusInternalServerError)
+		return
+	}
+
+	defer r.Body.Close()
+
+	var accessServerInfo AccessServerInfo
+
+	err = json.Unmarshal(body, &accessServerInfo)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	serverPath := findTokenUser(accessServerInfo.Token)
+
+	jsonData, err := ioutil.ReadFile(serverPath)
+	if err != nil {
+		fmt.Printf("Error reading file %s: %v\n", serverPath, err)
+		return
+	}
+
+	var userInfo UserInfo
+
+	err = json.Unmarshal(jsonData, &userInfo)
+	if err != nil {
+		log.Fatal(err)
+		return
+	}
+
+	var serverInfo ServerInfo
+
+	serverInfo.Host = userInfo.Servers[accessServerInfo.Name].Host
+	serverInfo.Password = userInfo.Servers[accessServerInfo.Name].Password
+	serverInfo.Port = userInfo.Servers[accessServerInfo.Name].Port
+	serverInfo.Username = userInfo.Servers[accessServerInfo.Name].Username
+
+	client := establishConnection(serverInfo.Host, serverInfo.Port, serverInfo.Username, serverInfo.Password)
+
+	cmd := "uname -a"
+	output, err := runCommand(client, cmd)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	fmt.Println("SSH Server Response:", output)
+
+}
+
 func main() {
 	fmt.Println("Set up server at 8080")
 
 	http.HandleFunc("/", handleLoginRequest)
 
 	http.HandleFunc("/server", handleServerRequest) //TODO: Only recreate the token once and see if the expire time dictates that the token needs to be created again.
+
+	http.HandleFunc("/access", handleAccessRequest)
 
 	// fmt.Println(findTokenUser("06e207fa-db59-11ed-9ddf-0c4de9cb1e33"))
 

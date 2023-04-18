@@ -57,7 +57,7 @@ const ServerInfo = () => {
   }, []);
 
   const blocks = serverData.map((value, index) => (
-    <ServerBlock serverName={value.Name} serverStatus={value.Status} />
+    <ServerBlock key={index} serverName={value.Name} serverStatus={value.Status} />
   ));
 
   return (
