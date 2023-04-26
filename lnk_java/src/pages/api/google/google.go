@@ -69,6 +69,7 @@ type UserInfo struct {
 }
 
 type ServerInfo struct {
+	Name     string `json:"name"`
 	Host     string `json:"host"`
 	Port     string `json:"port"`
 	Username string `json:"username"`
@@ -83,8 +84,14 @@ type GeneralServerInfo struct {
 type GeneralInfoAllServers map[string]GeneralServerInfo
 
 type AccessServerInfo struct {
-	Name  string `json:"status`
+	Name  string `json:"name`
 	Token string `json:"token"` //TODO: Implement the expire data mechansims in this struct after
+}
+
+type ServerResponse struct {
+	Name     string `json:"name`
+	Token    string `json:"token"`
+	Response string `json:"response"`
 }
 
 const expireTimeOffset = 5
@@ -438,7 +445,7 @@ func retriveUserServerInfo(email string) {
 
 }
 
-func establishConnection(h string, p string, user string, pass string) {
+func establishConnection(h string, p string, user string, pass string) (string, error) {
 	host := h //TODO: pull credentails from a data base server to pupolaute based on the server that one wants to acceses.
 	port := p
 	username := user
@@ -466,6 +473,7 @@ func establishConnection(h string, p string, user string, pass string) {
 	client, err := ssh.Dial("tcp", address, config)
 	if err != nil {
 		log.Fatalf("Failed to connect: %s", err)
+		return "", err
 	}
 	defer client.Close()
 
@@ -473,13 +481,17 @@ func establishConnection(h string, p string, user string, pass string) {
 
 	// Run a command on the remote server
 	cmd := "uname -a"
+	// cmd = "sudo apt update"
 	output, err := runCommand(client, cmd)
 	if err != nil {
 		log.Fatalf("Failed to run command: %s", err)
+		return "", err
 	}
 
 	fmt.Println("Output:")
 	fmt.Println(output)
+
+	return output, nil
 
 }
 
@@ -554,8 +566,29 @@ func handleAccessRequest(w http.ResponseWriter, r *http.Request) {
 	serverInfo.Port = userInfo.Servers[accessServerInfo.Name].Port
 	serverInfo.Username = userInfo.Servers[accessServerInfo.Name].Username
 
-	establishConnection(serverInfo.Host, serverInfo.Port, serverInfo.Username, serverInfo.Password)
+	output, err := establishConnection(serverInfo.Host, serverInfo.Port, serverInfo.Username, serverInfo.Password)
+	if err != nil {
+		//TODO: Do something on the front end page to show the error
+	} else {
+		//return a baseline message
+		var serverResp ServerResponse
 
+		serverResp.Name = accessServerInfo.Name
+		serverResp.Token = accessServerInfo.Token
+		serverResp.Response = output
+
+		respJson, err = json.Marshal(serverResp)
+		if err != nil {
+			//TODO: send the error response for the server
+			fmt.Println("error:", err)
+			return
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		w.Write(respJson)
+
+	}
 }
 
 func main() {
