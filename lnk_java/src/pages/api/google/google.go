@@ -438,7 +438,7 @@ func retriveUserServerInfo(email string) {
 
 }
 
-func establishConnection(h string, p string, user string, pass string) *ssh.Client {
+func establishConnection(h string, p string, user string, pass string) {
 	host := h //TODO: pull credentails from a data base server to pupolaute based on the server that one wants to acceses.
 	port := p
 	username := user
@@ -469,7 +469,17 @@ func establishConnection(h string, p string, user string, pass string) *ssh.Clie
 	}
 	defer client.Close()
 
-	return client
+	fmt.Println("I am here", client)
+
+	// Run a command on the remote server
+	cmd := "uname -a"
+	output, err := runCommand(client, cmd)
+	if err != nil {
+		log.Fatalf("Failed to run command: %s", err)
+	}
+
+	fmt.Println("Output:")
+	fmt.Println(output)
 
 }
 
@@ -544,15 +554,7 @@ func handleAccessRequest(w http.ResponseWriter, r *http.Request) {
 	serverInfo.Port = userInfo.Servers[accessServerInfo.Name].Port
 	serverInfo.Username = userInfo.Servers[accessServerInfo.Name].Username
 
-	client := establishConnection(serverInfo.Host, serverInfo.Port, serverInfo.Username, serverInfo.Password)
-
-	cmd := "uname -a"
-	output, err := runCommand(client, cmd)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	fmt.Println("SSH Server Response:", output)
+	establishConnection(serverInfo.Host, serverInfo.Port, serverInfo.Username, serverInfo.Password)
 
 }
 

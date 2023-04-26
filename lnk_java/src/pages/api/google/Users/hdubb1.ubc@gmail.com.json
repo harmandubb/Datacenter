@@ -1,12 +1,12 @@
 {
-  "expire": "2023-04-17T22:01:10.559059-07:00",
+  "expire": "2023-04-25T22:32:22.875795-07:00",
   "servers": {
-    "pi": {
-      "host": "192.168.1.175",
-      "password": "4715",
+    "odroid": {
+      "host": "192.168.1.109",
+      "password": "odroid",
       "port": "22",
-      "username": "pi"
+      "username": "root"
     }
   },
-  "token": "564d1976-dda5-11ed-9de4-0c4de9cb1e33"
+  "token": "0597f66e-e3f3-11ed-9689-0c4de9cb1e33"
 }

@@ -40,9 +40,6 @@ async function googleCredentialsCheck(router ,url = "http://localhost:8080", cre
         method: 'POST',
         headers: {
             "Content-Type": "application/json",
-            // 'Access-Control-Allow-Origin': "*",
-            // 'Access-Control-Allow-Methods': ('POST', 'OPTIONS', 'HEAD', 'GET', 'PUT', 'DELETE'),
-            // 'Access-Control-Allow-Headers': ('Content-Type', 'Authorization'),
         },
         body: JSON.stringify(data),
     }

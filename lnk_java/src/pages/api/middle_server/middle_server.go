@@ -10,10 +10,10 @@ import (
 )
 
 func main() {
-	host := "192.168.1.175" //TODO: pull credentails from a data base server to pupolaute based on the server that one wants to acceses.
+	host := "192.168.1.109" //TODO: pull credentails from a data base server to pupolaute based on the server that one wants to acceses.
 	port := 22
-	username := "pi"
-	password := "4715"
+	username := "root"
+	password := "odroid"
 
 	fmt.Println("Host:", host)
 	fmt.Println("Port:", port)
@@ -51,7 +51,7 @@ func main() {
 	}
 	defer client.Close()
 
-	fmt.Println("I am here")
+	fmt.Println("I am here", client)
 
 	// Run a command on the remote server
 	cmd := "uname -a"
