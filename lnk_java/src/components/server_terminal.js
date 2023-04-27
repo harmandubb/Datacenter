@@ -1,11 +1,11 @@
 import React from 'react';
 
 
-const ServerTerminal = () => {
+const ServerTerminal = (props) => {
   return (
     <div className="container">
       <div className="black-box">
-        <p className="text">Your text goes here</p>
+        <p className="text">{props.initial}</p>
       </div>
       <button className="send-button">Send</button>
     </div>

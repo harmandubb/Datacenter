@@ -9,6 +9,12 @@ function ServerBlock({ serverName, serverStatus }) {
     setIsVisible(!isVisible);
   };
 
+  const [initializedServer, setInitializedServer] = useState("");
+
+  const initializedServerNow = (server_string) => {
+    setInitializedServer(server_string);
+  };
+
   const handleClick = async (serverName) => {
     let url = "http://localhost:8080/access";
   
@@ -36,7 +42,8 @@ function ServerBlock({ serverName, serverStatus }) {
       return response.json();
     })
     .then((data) => {
-      toggleTerminal()
+      initializedServerNow(data.response);
+      toggleTerminal();
     })
     .catch((err) => {
         console.log("An Error has occured");
@@ -52,7 +59,7 @@ function ServerBlock({ serverName, serverStatus }) {
           <p>Server Status: {serverStatus}</p>
           <button onClick={() => handleClick(serverName)}>Access Server</button>
           {isVisible && (
-            <ServerTerminal />
+            <ServerTerminal initial={initializedServer}/>
           )}
         </div>
       );
