@@ -577,7 +577,7 @@ func handleAccessRequest(w http.ResponseWriter, r *http.Request) {
 		serverResp.Token = accessServerInfo.Token
 		serverResp.Response = output
 
-		respJson, err = json.Marshal(serverResp)
+		respJson, err := json.Marshal(serverResp)
 		if err != nil {
 			//TODO: send the error response for the server
 			fmt.Println("error:", err)
