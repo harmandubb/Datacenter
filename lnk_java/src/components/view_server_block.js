@@ -59,7 +59,7 @@ function ServerBlock({ serverName, serverStatus }) {
           <p>Server Status: {serverStatus}</p>
           <button onClick={() => handleClick(serverName)}>Access Server</button>
           {isVisible && (
-            <ServerTerminal initial={initializedServer}/>
+            <ServerTerminal initial={initializedServer} name={serverName}/>
           )}
         </div>
       );

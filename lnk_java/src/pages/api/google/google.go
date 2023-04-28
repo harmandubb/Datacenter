@@ -445,7 +445,7 @@ func retriveUserServerInfo(email string) {
 
 }
 
-func establishConnection(h string, p string, user string, pass string) (string, error) {
+func establishConnection(h string, p string, user string, pass string) (string, *ssh.Session, error) {
 	host := h //TODO: pull credentails from a data base server to pupolaute based on the server that one wants to acceses.
 	port := p
 	username := user
@@ -482,7 +482,7 @@ func establishConnection(h string, p string, user string, pass string) (string, 
 	// Run a command on the remote server
 	cmd := "uname -a"
 	// cmd = "sudo apt update"
-	output, err := runCommand(client, cmd)
+	output, session, err := runCommand(client, cmd)
 	if err != nil {
 		log.Fatalf("Failed to run command: %s", err)
 		return "", err
@@ -491,14 +491,14 @@ func establishConnection(h string, p string, user string, pass string) (string, 
 	fmt.Println("Output:")
 	fmt.Println(output)
 
-	return output, nil
+	return output, session, nil
 
 }
 
-func runCommand(client *ssh.Client, cmd string) (string, error) {
+func runCommand(client *ssh.Client, cmd string) (string, *ssh.Session, error) {
 	session, err := client.NewSession()
 	if err != nil {
-		return "", err
+		return "", nil, err
 	}
 	defer session.Close()
 
@@ -507,31 +507,31 @@ func runCommand(client *ssh.Client, cmd string) (string, error) {
 
 	err = session.Run(cmd)
 	if err != nil {
-		return "", err
+		return "", nil, err
 	}
 
-	return stdoutBuf.String(), nil
+	return stdoutBuf.String(), session, nil
 }
 
-func handleAccessRequest(w http.ResponseWriter, r *http.Request) {
+func handleAccessRequest(w http.ResponseWriter, r *http.Request) *ssh.Session {
 	enableCORS(&w)
 
 	fmt.Println("Inthe Access Request Funciton")
 
 	if r.Method == "OPTIONS" {
 		w.WriteHeader(http.StatusNoContent)
-		return
+		return nil
 	}
 
 	if r.Method != http.MethodPost {
 		http.Error(w, "Only POST method is allowed", http.StatusMethodNotAllowed)
-		return
+		return nil
 	}
 
 	body, err := io.ReadAll(r.Body)
 	if err != nil {
 		http.Error(w, "Error reading request body", http.StatusInternalServerError)
-		return
+		return nil
 	}
 
 	defer r.Body.Close()
@@ -548,7 +548,7 @@ func handleAccessRequest(w http.ResponseWriter, r *http.Request) {
 	jsonData, err := ioutil.ReadFile(serverPath)
 	if err != nil {
 		fmt.Printf("Error reading file %s: %v\n", serverPath, err)
-		return
+		return nil
 	}
 
 	var userInfo UserInfo
@@ -556,7 +556,7 @@ func handleAccessRequest(w http.ResponseWriter, r *http.Request) {
 	err = json.Unmarshal(jsonData, &userInfo)
 	if err != nil {
 		log.Fatal(err)
-		return
+		return nil
 	}
 
 	var serverInfo ServerInfo
@@ -566,7 +566,7 @@ func handleAccessRequest(w http.ResponseWriter, r *http.Request) {
 	serverInfo.Port = userInfo.Servers[accessServerInfo.Name].Port
 	serverInfo.Username = userInfo.Servers[accessServerInfo.Name].Username
 
-	output, err := establishConnection(serverInfo.Host, serverInfo.Port, serverInfo.Username, serverInfo.Password)
+	output, session, err := establishConnection(serverInfo.Host, serverInfo.Port, serverInfo.Username, serverInfo.Password)
 	if err != nil {
 		//TODO: Do something on the front end page to show the error
 	} else {
@@ -581,12 +581,14 @@ func handleAccessRequest(w http.ResponseWriter, r *http.Request) {
 		if err != nil {
 			//TODO: send the error response for the server
 			fmt.Println("error:", err)
-			return
+			return nil
 		}
 
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
 		w.Write(respJson)
+
+		return session
 
 	}
 }
@@ -598,7 +600,7 @@ func main() {
 
 	http.HandleFunc("/server", handleServerRequest) //TODO: Only recreate the token once and see if the expire time dictates that the token needs to be created again.
 
-	http.HandleFunc("/access", handleAccessRequest)
+	session = http.HandleFunc("/access", handleAccessRequest)
 
 	// fmt.Println(findTokenUser("06e207fa-db59-11ed-9ddf-0c4de9cb1e33"))
 

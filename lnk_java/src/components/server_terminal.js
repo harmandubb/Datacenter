@@ -8,8 +8,29 @@ function ServerTerminal(props) {
     setCommand(event.target.value);
   };
 
-  const handleSubmit = () => {
+  async function handleSubmit(){
     // Make a post to the back end for the server update
+    let url = "http://localhost:8080/cmd";
+  
+    let sessionStorageJSON = JSON.parse(sessionStorage.getItem("serverLNKSession"));
+  
+    let data = {
+      Name: props.name,
+      Token: sessionStorageJSON.token,
+      CMD: command,
+    };
+  
+    
+    const options = {
+      method: 'POST',
+      headers: {
+          "Content-Type": "application/json",
+      },
+      body: JSON.stringify(data),
+    }
+  
+    // console.log("Options:",options)
+    await fetch(url,options)
     console.log(command);
     setCommand('');
   };
