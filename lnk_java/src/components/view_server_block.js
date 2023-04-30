@@ -39,6 +39,12 @@ function ServerBlock({ serverName, serverStatus }) {
     .then((response) => {
       
       console.log("After server is initialized:", response);
+      const serverTerminalSessionStorageObject = {
+        name: serverName
+      }
+
+      sessionStorage.setItem("serverTerminalSession", JSON.stringify(serverTerminalSessionStorageObject));
+
       return response.json();
     })
     .then((data) => {
