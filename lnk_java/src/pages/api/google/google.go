@@ -89,10 +89,21 @@ type AccessServerInfo struct {
 	Token string `json:"token"` //TODO: Implement the expire data mechansims in this struct after
 }
 
+type ServerTerminalInfo struct {
+	Name  string `json:"name`
+	Token string `json:"token"`
+	CMD   string `json:"cmd"`
+}
+
 type ServerResponse struct {
 	Name     string `json:"name`
 	Token    string `json:"token"`
 	Response string `json:"response"`
+}
+
+type TerminalPipes struct {
+	Stdoutpipe io.Reader      `json:"stdoutpipe"`
+	Stdinpipe  io.WriteCloser `json:"stdinpipe"`
 }
 
 const expireTimeOffset = 5
@@ -507,7 +518,7 @@ func runCommand(session *ssh.Session, cmd []string) (string, error) {
 	return stdoutBuf.String(), nil
 }
 
-func handleAccessRequest(w http.ResponseWriter, r *http.Request) {
+func (s *TerminalPipes) handleAccessRequest(w http.ResponseWriter, r *http.Request) {
 	enableCORS(&w)
 
 	if r.Method == "OPTIONS" {
@@ -562,12 +573,14 @@ func handleAccessRequest(w http.ResponseWriter, r *http.Request) {
 
 	//get stdin pipe for the sessoin
 	stdin, err := session.StdinPipe()
+	s.Stdinpipe = stdin
 	if err != nil {
 		log.Fatalf("Failed to get stdin pipe: %s", err)
 	}
 
 	// Get the stdout pipe for the session
 	stdout, err := session.StdoutPipe()
+	s.Stdoutpipe = stdout
 	if err != nil {
 		log.Fatalf("Failed to get stdout pipe: %s", err)
 	}
@@ -576,9 +589,6 @@ func handleAccessRequest(w http.ResponseWriter, r *http.Request) {
 	if err := session.Shell(); err != nil {
 		log.Fatalf("Failed to start shell: %s", err)
 	}
-
-	// Write a command to the remote shell
-	io.WriteString(stdin, "echo 'Hello, World!'\n")
 
 	// Read the output of the command
 	buf := make([]byte, 256)
@@ -590,8 +600,6 @@ func handleAccessRequest(w http.ResponseWriter, r *http.Request) {
 	// Print the output
 	output := strings.TrimSpace(string(buf[:n]))
 	fmt.Println(output)
-
-	fmt.Println("OUTPUT:", output)
 
 	if err != nil {
 		//TODO: Do something on the front end page to show the error
@@ -617,7 +625,7 @@ func handleAccessRequest(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func handleCMDRequest(w http.ResponseWriter, r *http.Request) {
+func (s *TerminalPipes) handleCMDRequest(w http.ResponseWriter, r *http.Request) {
 	enableCORS(&w)
 
 	if r.Method == "OPTIONS" {
@@ -638,18 +646,63 @@ func handleCMDRequest(w http.ResponseWriter, r *http.Request) {
 
 	defer r.Body.Close()
 
+	var serverTerminalInfo ServerTerminalInfo
+
+	err = json.Unmarshal(body, &serverTerminalInfo)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	// fmt.Println(serverTerminalInfo)
+	// Write a command to the remote shell
+	io.WriteString(s.Stdinpipe, "echo 'Hello, World!'\n")
+
+	buf := make([]byte, 256)
+	n, err := s.Stdoutpipe.Read(buf)
+	if err != nil && err != io.EOF {
+		log.Fatalf("Failed to read command output: %s", err)
+	}
+
+	// Print the output
+	output := strings.TrimSpace(string(buf[:n]))
+	fmt.Println(output)
+
+	if err != nil {
+		//TODO: Do something on the front end page to show the error
+	} else {
+		//return a baseline message
+		var serverResp ServerResponse
+
+		serverResp.Name = serverTerminalInfo.Name
+		serverResp.Token = serverTerminalInfo.Token
+		serverResp.Response = output
+
+		respJson, err := json.Marshal(serverResp)
+		if err != nil {
+			//TODO: send the error response for the server
+			fmt.Println("error:", err)
+			return
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		w.Write(respJson)
+
+	}
+
 }
 
 func main() {
 	fmt.Println("Set up server at 8080")
+	serverPipes := &TerminalPipes{}
 
 	http.HandleFunc("/", handleLoginRequest)
 
 	http.HandleFunc("/server", handleServerRequest) //TODO: Only recreate the token once and see if the expire time dictates that the token needs to be created again.
 
-	http.HandleFunc("/access", handleAccessRequest)
+	http.HandleFunc("/access", serverPipes.handleAccessRequest)
 
-	http.HandleFunc("/cmd", handleCMDRequest)
+	http.HandleFunc("/cmd", serverPipes.handleCMDRequest)
 
 	log.Fatal(http.ListenAndServe(":8080", nil))
 

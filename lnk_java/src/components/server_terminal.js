@@ -13,7 +13,8 @@ function ServerTerminal(props) {
     let url = "http://localhost:8080/cmd";
   
     let sessionStorageJSON = JSON.parse(sessionStorage.getItem("serverLNKSession"));
-  
+    // let serverTerminalStorageJSON = JSON.parse(sessionStorage.getItem("serverTerminalSession"));
+
     let data = {
       Name: props.name,
       Token: sessionStorageJSON.token,
@@ -31,6 +32,9 @@ function ServerTerminal(props) {
   
     // console.log("Options:",options)
     await fetch(url,options)
+    .then((response) => {
+      
+    })
     console.log(command);
     setCommand('');
   };
