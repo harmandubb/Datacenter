@@ -510,8 +510,6 @@ func runCommand(session *ssh.Session, cmd []string) (string, error) {
 func handleAccessRequest(w http.ResponseWriter, r *http.Request) {
 	enableCORS(&w)
 
-	fmt.Println("Inthe Access Request Funciton")
-
 	if r.Method == "OPTIONS" {
 		w.WriteHeader(http.StatusNoContent)
 		return
@@ -562,14 +560,36 @@ func handleAccessRequest(w http.ResponseWriter, r *http.Request) {
 
 	session, err := establishConnection(serverInfo.Host, serverInfo.Port, serverInfo.Username, serverInfo.Password)
 
-	cmd := []string{
-		"uname -a",
+	//get stdin pipe for the sessoin
+	stdin, err := session.StdinPipe()
+	if err != nil {
+		log.Fatalf("Failed to get stdin pipe: %s", err)
 	}
 
-	output, err := runCommand(session, cmd)
+	// Get the stdout pipe for the session
+	stdout, err := session.StdoutPipe()
 	if err != nil {
-		log.Fatal(err)
+		log.Fatalf("Failed to get stdout pipe: %s", err)
 	}
+
+	// Start a remote shell
+	if err := session.Shell(); err != nil {
+		log.Fatalf("Failed to start shell: %s", err)
+	}
+
+	// Write a command to the remote shell
+	io.WriteString(stdin, "echo 'Hello, World!'\n")
+
+	// Read the output of the command
+	buf := make([]byte, 256)
+	n, err := stdout.Read(buf)
+	if err != nil && err != io.EOF {
+		log.Fatalf("Failed to read command output: %s", err)
+	}
+
+	// Print the output
+	output := strings.TrimSpace(string(buf[:n]))
+	fmt.Println(output)
 
 	fmt.Println("OUTPUT:", output)
 
@@ -594,9 +614,30 @@ func handleAccessRequest(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
 		w.Write(respJson)
 
-		// return session
-
 	}
+}
+
+func handleCMDRequest(w http.ResponseWriter, r *http.Request) {
+	enableCORS(&w)
+
+	if r.Method == "OPTIONS" {
+		w.WriteHeader(http.StatusNoContent)
+		return
+	}
+
+	if r.Method != http.MethodPost {
+		http.Error(w, "Only POST method is allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	body, err := io.ReadAll(r.Body)
+	if err != nil {
+		http.Error(w, "Error reading request body", http.StatusInternalServerError)
+		return
+	}
+
+	defer r.Body.Close()
+
 }
 
 func main() {
@@ -608,7 +649,7 @@ func main() {
 
 	http.HandleFunc("/access", handleAccessRequest)
 
-	// http.HandleFunc("/cmd", handleCMDRequest)
+	http.HandleFunc("/cmd", handleCMDRequest)
 
 	log.Fatal(http.ListenAndServe(":8080", nil))
 
