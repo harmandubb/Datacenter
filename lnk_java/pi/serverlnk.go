@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"fmt"
 	"log"
 	"os"
@@ -36,12 +37,22 @@ func transmitCommand(command string) {
 	// fmt.Printf("Wrote %d bytes to UART port.\n", n)
 
 	buf := make([]byte, 8192)
-	n, err = p.Read(buf)
-	if err != nil {
-		log.Fatal(err)
-	}
+	var response []byte
+	for {
+		n, err = p.Read(buf)
+		if err != nil {
+			log.Fatal(err)
+		}
 
-	fmt.Println(string(buf[:n]))
+		response = append(response, buf[:n]...)
+
+		// Break the loop if a newline character is received.
+		if bytes.Contains(response, []byte("\n")) {
+			fmt.Println(string(response[:len(response)-1]))
+
+			break
+		}
+	}
 
 }
 
