@@ -591,7 +591,8 @@ func (s *TerminalPipes) handleAccessRequest(w http.ResponseWriter, r *http.Reque
 	}
 
 	// Read the output of the command
-	buf := make([]byte, 256)
+
+	buf := make([]byte, 8192)
 	n, err := stdout.Read(buf)
 	if err != nil && err != io.EOF {
 		log.Fatalf("Failed to read command output: %s", err)
@@ -653,19 +654,27 @@ func (s *TerminalPipes) handleCMDRequest(w http.ResponseWriter, r *http.Request)
 		log.Fatal(err)
 	}
 
-	// fmt.Println(serverTerminalInfo)
+	fmt.Println("ServerTerminal CMD:", serverTerminalInfo.CMD)
 	// Write a command to the remote shell
-	io.WriteString(s.Stdinpipe, "echo 'Hello, World!'\n")
+	shellCMD := serverTerminalInfo.CMD + "\n"
+	fmt.Println(shellCMD)
+	io.WriteString(s.Stdinpipe, shellCMD) //Seems to have issues with multiple commands and server lnk. Need to see if the serverlnk files are avialable.
 
-	buf := make([]byte, 256)
+	buf := make([]byte, 8192)
+	time.Sleep(2 * time.Second)
+	fmt.Println("Hold up here??")
 	n, err := s.Stdoutpipe.Read(buf)
+	fmt.Println("Sucessfully Read into buffer")
+
 	if err != nil && err != io.EOF {
 		log.Fatalf("Failed to read command output: %s", err)
 	}
 
 	// Print the output
+
 	output := strings.TrimSpace(string(buf[:n]))
-	fmt.Println(output)
+	fmt.Println("Outputs should be produced?")
+	fmt.Println("Output Message:", output)
 
 	if err != nil {
 		//TODO: Do something on the front end page to show the error

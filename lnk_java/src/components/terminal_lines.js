@@ -2,13 +2,18 @@ import React from 'react';
 import ServerTerminal from './server_terminal';
 import { useState } from 'react';
 
-function TerminalLines({message}) {
+function TerminalLines({user,server}) {
   
 
     return (
-        <p>
-            {message}
-        </p>
+        <div>
+        <div>
+            {user}
+        </div>
+        <div>
+            {server}
+        </div>
+        </div>
       );
 }
 

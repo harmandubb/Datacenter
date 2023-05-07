@@ -11,6 +11,10 @@ function ServerTerminal(props) {
     setCommand(event.target.value);
   };
 
+  const addMessage = (currentMessage) => {
+    setMessages(prevMessages => [...prevMessages, currentMessage]);
+  };
+
   async function handleSubmit(){
     // Make a post to the back end for the server update
     let url = "http://localhost:8080/cmd";
@@ -18,13 +22,19 @@ function ServerTerminal(props) {
     let sessionStorageJSON = JSON.parse(sessionStorage.getItem("serverLNKSession"));
     // let serverTerminalStorageJSON = JSON.parse(sessionStorage.getItem("serverTerminalSession"));
 
+    let cmd = "serverlnk " + command 
+
     let data = {
       Name: props.name,
       Token: sessionStorageJSON.token,
-      CMD: command,
+      CMD: cmd,
     };
 
-    setMessages([messages, "User: " + command])
+    console.log("Command in the struct:",data.CMD);
+
+    // setMessages([messages, "User: " + command])
+
+    console.log("messages structure:")
   
     
     const options = {
@@ -41,17 +51,18 @@ function ServerTerminal(props) {
       return response.json();
       
     }).then((data) =>{
-      console.log("I am here");
-      //TODO: check if the credentials still checkout at this point
-      setMessages((prevMessages) => [prevMessages,"Server: " + data.response])
-      console.log(messages);
+      let currentMessage = ["User: " + command, "Server: " + data.response]
+
+      console.log("Current Message:", currentMessage);
+      addMessage(currentMessage);
+      console.log("printing updated Message:",messages);
     })
     console.log(command);
     setCommand('');
   };
 
   const terminalLines = messages.map((data, index) => (
-    <TerminalLines key={index} message={data} />
+    <TerminalLines key={index} user={data[0]} server={data[1]} />
   ));
 
   return (
