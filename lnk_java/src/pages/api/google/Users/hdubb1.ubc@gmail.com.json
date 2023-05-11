@@ -1,5 +1,5 @@
 {
-  "expire": "2023-04-29T21:08:37.459952-07:00",
+  "expire": "2023-05-07T21:39:09.108785-07:00",
   "servers": {
     "odroid": {
       "host": "192.168.1.109",
@@ -8,5 +8,5 @@
       "username": "root"
     }
   },
-  "token": "fbdd5a6c-e70b-11ed-9c03-0c4de9cb1e33"
+  "token": "92eacf54-ed59-11ed-9eea-0c4de9cb1e33"
 }
