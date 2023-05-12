@@ -70,11 +70,12 @@ static void transfer(int fd)
 }
 
 uint8_t createByte(uint8_t opCode, uint8_t arg){
-    return (pCode << 5 ) | arg
+    return (opCode << 5 ) | arg;
 }
 
 static void readControlRegister(int fd, uint8_t regAddress)
 {
+        int ret = 0;
         uint8_t opCode = 0;
         uint8_t tx[] = {
             createByte(opCode, regAddress)
@@ -258,9 +259,11 @@ int main(int argc, char *argv[])
 
         //------------------END of SET UP---------------//\
  
-        transfreadControlRegisterer(fd, 0);
+        readControlRegister(fd, 0);
  
         close(fd);
  
         return ret;
 }
+
+// scp /Users/harmandeepdubb/Desktop/Datacenter/lnk_java/pi/spi.c root@192.168.1.109:/home
