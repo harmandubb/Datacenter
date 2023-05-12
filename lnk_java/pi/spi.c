@@ -211,7 +211,7 @@ int* readBufferMemory(int fd)
         tr.delay_usecs = delay;
         tr.speed_hz = speed;
         tr.bits_per_word = bits;
-        tr.cs_change = 1; //we only need to see how the regester looks like 
+        tr.cs_change = 0; //we only need to see how the regester looks like 
 
         ret = ioctl(fd, SPI_IOC_MESSAGE(1), &tr);
         if (ret < 1)
@@ -465,14 +465,14 @@ int main(int argc, char *argv[])
 
         writeControlRegister(fd,30,econ2Val);
 
-        char cmd[] = "\r";
+        char cmd[] = "Hello\r";
 
         int size = strlen(cmd);
         // int size = sizeof(cmd) / sizeof(cmd[0]);
 
         writeBufferMemory(fd,cmd, size);
 
-        readBufferMemory(fd);
+        int *output = readBufferMemory(fd);
     
         close(fd);
  
