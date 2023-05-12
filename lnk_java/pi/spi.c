@@ -29,8 +29,8 @@ static void transfer(int fd)
         int ret;
         uint8_t tx[] = {
                 0x01, 0x02, 0x03, 0x04,
-        };
-        uint8_t rx[ARRAY_SIZE(tx)] = {0, };
+        }; //Out going command
+        uint8_t rx[ARRAY_SIZE(tx)] = {0, }; // Equal array to get the response
         struct spi_ioc_transfer tr; //This struct is a standard struct in the spidev.h file 
 
         // struct spi_ioc_transfer {
@@ -48,7 +48,7 @@ static void transfer(int fd)
         //     __u16	pad;
         // };
 
-        memset(&tr, 0, sizeof(tr));
+        memset(&tr, 0, sizeof(tr)); //Holds the parameters for the SPI structure
         tr.tx_buf = (unsigned long)tx;
         tr.rx_buf = (unsigned long)rx;
         tr.len = ARRAY_SIZE(tx);
@@ -61,6 +61,57 @@ static void transfer(int fd)
         if (ret < 1)
                 pabort("can't send spi message");
  
+        for (ret = 0; ret < ARRAY_SIZE(tx); ret++) {
+                if (!(ret % 6))
+                        puts("");
+                printf("%.2X ", rx[ret]);
+        }
+        puts("");
+}
+
+uint8_t createByte(uint8_t opCode, uint8_t arg){
+    return (pCode << 5 ) | arg
+}
+
+static void readControlRegister(int fd, uint8_t regAddress)
+{
+        uint8_t opCode = 0;
+        uint8_t tx[] = {
+            createByte(opCode, regAddress)
+        };
+
+        uint8_t rx[ARRAY_SIZE(tx)] = {0, };// Equal array to get the response
+        struct spi_ioc_transfer tr; //This struct is a standard struct in the spidev.h file 
+
+        // struct spi_ioc_transfer {
+        //     __u64	tx_buf;    // array for the tx buffer
+        //     __u64	rx_buf;    // array for the rx biffer  
+
+        //     __u32	len;       // length of the data trasnfer that will be expressed in bytes.
+        //     __u32	speed_hz;  // speed of the spi interface 
+
+        //     __u16	delay_usecs;
+        //     __u8	    bits_per_word;
+        //     __u8	    cs_change;
+        //     __u8	    tx_nbits;
+        //     __u8	    rx_nbits;
+        //     __u16	pad;
+        // };
+
+        memset(&tr, 0, sizeof(tr)); //Holds the parameters for the SPI structure
+        tr.tx_buf = (unsigned long)tx;
+        tr.rx_buf = (unsigned long)rx;
+        tr.len = ARRAY_SIZE(tx);
+        tr.delay_usecs = delay;
+        tr.speed_hz = speed;
+        tr.bits_per_word = bits;
+        tr.cs_change = 1; //we only need to see how the regester looks like 
+
+        ret = ioctl(fd, SPI_IOC_MESSAGE(1), &tr);
+        if (ret < 1)
+                pabort("can't send spi message");
+
+        //use this for debugging for now
         for (ret = 0; ret < ARRAY_SIZE(tx); ret++) {
                 if (!(ret % 6))
                         puts("");
@@ -159,17 +210,19 @@ int main(int argc, char *argv[])
 {
         int ret = 0;
         int fd;
+
+        //------------START of Device set up-----------//
  
         parse_opts(argc, argv);
  
-        fd = open(device, O_RDWR);
+        fd = open(device, O_RDWR); //opening the SPI device
         if (fd < 0)
                 pabort("can't open device");
  
         /*
          * spi mode
          */
-        ret = ioctl(fd, SPI_IOC_WR_MODE, &mode);
+        ret = ioctl(fd, SPI_IOC_WR_MODE, &mode); //input/output control
         if (ret == -1)
                 pabort("can't set spi mode");
  
@@ -202,8 +255,10 @@ int main(int argc, char *argv[])
         printf("spi mode: %d\n", mode);
         printf("bits per word: %d\n", bits);
         printf("max speed: %d Hz (%d KHz)\n", speed, speed/1000);
+
+        //------------------END of SET UP---------------//\
  
-        transfer(fd);
+        transfreadControlRegisterer(fd, 0);
  
         close(fd);
  
