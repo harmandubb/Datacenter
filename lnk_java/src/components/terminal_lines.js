@@ -7,12 +7,12 @@ function TerminalLines({user,server}) {
 
     return (
         <div>
-        <div>
-            {user}
-        </div>
-        <div>
-            {server}
-        </div>
+            <div>
+                {user}
+            </div>
+            <div>
+                {server}
+            </div>
         </div>
       );
 }

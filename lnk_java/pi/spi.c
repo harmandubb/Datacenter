@@ -169,6 +169,213 @@ static void writeControlRegister(int fd, uint8_t regAddress, uint8_t data)
         }
         puts("");
 }
+
+int* readBufferMemory(int fd)
+{
+        int ret = 0;
+        int bufferSize = 100;
+        uint8_t opCode = 1;
+        uint8_t arg = 26;
+        uint8_t tx[] = {
+            createByte(opCode, arg)
+        };
+        int* rx = (int*)calloc(bufferSize, sizeof(uint8_t));
+
+        if(rx == NULL){
+            puts("Memory allocation failed");
+            exit(1);
+        }
+
+        //write data into the allocated memory 
+        struct spi_ioc_transfer tr; //This struct is a standard struct in the spidev.h file 
+
+        // struct spi_ioc_transfer {
+        //     __u64	tx_buf;    // array for the tx buffer
+        //     __u64	rx_buf;    // array for the rx biffer  
+
+        //     __u32	len;       // length of the data trasnfer that will be expressed in bytes.
+        //     __u32	speed_hz;  // speed of the spi interface 
+
+        //     __u16	delay_usecs;
+        //     __u8	    bits_per_word;
+        //     __u8	    cs_change;
+        //     __u8	    tx_nbits;
+        //     __u8	    rx_nbits;
+        //     __u16	pad;
+        // };
+
+        memset(&tr, 0, sizeof(tr)); //Holds the parameters for the SPI structure
+        tr.tx_buf = (unsigned long)tx;
+        tr.rx_buf = (unsigned long)rx;
+        tr.len = ARRAY_SIZE(tx);
+        tr.delay_usecs = delay;
+        tr.speed_hz = speed;
+        tr.bits_per_word = bits;
+        tr.cs_change = 1; //we only need to see how the regester looks like 
+
+        ret = ioctl(fd, SPI_IOC_MESSAGE(1), &tr);
+        if (ret < 1)
+                pabort("can't send spi message");
+                
+        //use this for debugging for now
+
+        int counter = 0;
+        for (ret = 0; ret < bufferSize; ret++) {
+            if (rx[ret] == 0){
+                puts("Found a blank");
+                counter++;
+                if (counter > 2){
+                    break;
+                }
+            }else{
+                puts("Something in the buffer");
+                printf("%.2X ", rx[ret]);
+                counter = 0;
+            }
+        }
+        return rx;
+}
+
+int* readBufferMemory(int fd)
+{
+        int ret = 0;
+        int bufferSize = 100;
+        uint8_t opCode = 1;
+        uint8_t arg = 26;
+        uint8_t tx[] = {
+            createByte(opCode, arg)
+        };
+        int* rx = (int*)calloc(bufferSize, sizeof(uint8_t));
+
+        if(rx == NULL){
+            puts("Memory allocation failed");
+            exit(1);
+        }
+
+        //write data into the allocated memory 
+        struct spi_ioc_transfer tr; //This struct is a standard struct in the spidev.h file 
+
+        // struct spi_ioc_transfer {
+        //     __u64	tx_buf;    // array for the tx buffer
+        //     __u64	rx_buf;    // array for the rx biffer  
+
+        //     __u32	len;       // length of the data trasnfer that will be expressed in bytes.
+        //     __u32	speed_hz;  // speed of the spi interface 
+
+        //     __u16	delay_usecs;
+        //     __u8	    bits_per_word;
+        //     __u8	    cs_change;
+        //     __u8	    tx_nbits;
+        //     __u8	    rx_nbits;
+        //     __u16	pad;
+        // };
+
+        memset(&tr, 0, sizeof(tr)); //Holds the parameters for the SPI structure
+        tr.tx_buf = (unsigned long)tx;
+        tr.rx_buf = (unsigned long)rx;
+        tr.len = ARRAY_SIZE(tx);
+        tr.delay_usecs = delay;
+        tr.speed_hz = speed;
+        tr.bits_per_word = bits;
+        tr.cs_change = 1; //we only need to see how the regester looks like 
+
+        ret = ioctl(fd, SPI_IOC_MESSAGE(1), &tr);
+        if (ret < 1)
+                pabort("can't send spi message");
+                
+        //use this for debugging for now
+
+        int counter = 0;
+        for (ret = 0; ret < bufferSize; ret++) {
+            if (rx[ret] == 0){
+                puts("Found a blank");
+                counter++;
+                if (counter > 2){
+                    break;
+                }
+            }else{
+                puts("Something in the buffer");
+                printf("%.2X ", rx[ret]);
+                counter = 0;
+            }
+        }
+        return rx;
+}
+
+void writeBufferMemory(int fd, int cmd[])
+{
+        int ret = 0;
+        uint8_t opCode = 3;
+        uint8_t arg = 26;
+
+        int size = sizeof(cmd) / sizeof(cmd[0]);
+        int* tx = (int*)calloc(size + 1, sizeof(uint8_t));
+        
+        if(tx == NULL){
+            puts("Memory allocation failed");
+            exit(1);
+        }
+
+        //inserting the information into 
+        tx[0] = createByte(apCode,arg);
+
+        for (int i = 0; i < size; i++){
+            tx[1+i] = cmd[i];
+        }
+        
+        uint8_t rx = [0];
+
+        
+
+        //write data into the allocated memory 
+        struct spi_ioc_transfer tr; //This struct is a standard struct in the spidev.h file 
+
+        // struct spi_ioc_transfer {
+        //     __u64	tx_buf;    // array for the tx buffer
+        //     __u64	rx_buf;    // array for the rx biffer  
+
+        //     __u32	len;       // length of the data trasnfer that will be expressed in bytes.
+        //     __u32	speed_hz;  // speed of the spi interface 
+
+        //     __u16	delay_usecs;
+        //     __u8	    bits_per_word;
+        //     __u8	    cs_change;
+        //     __u8	    tx_nbits;
+        //     __u8	    rx_nbits;
+        //     __u16	pad;
+        // };
+
+        memset(&tr, 0, sizeof(tr)); //Holds the parameters for the SPI structure
+        tr.tx_buf = (unsigned long)tx;
+        tr.rx_buf = (unsigned long)rx;
+        tr.len = ARRAY_SIZE(tx);
+        tr.delay_usecs = delay;
+        tr.speed_hz = speed;
+        tr.bits_per_word = bits;
+        tr.cs_change = 1; //we only need to see how the regester looks like 
+
+        ret = ioctl(fd, SPI_IOC_MESSAGE(1), &tr);
+        if (ret < 1)
+                pabort("can't send spi message");
+                
+        //use this for debugging for now
+
+        // int counter = 0;
+        // for (ret = 0; ret < bufferSize; ret++) {
+        //     if (rx[ret] == 0){
+        //         puts("Found a blank");
+        //         counter++;
+        //         if (counter > 2){
+        //             break;
+        //         }
+        //     }else{
+        //         puts("Something in the buffer");
+        //         printf("%.2X ", rx[ret]);
+        //         counter = 0;
+        //     }
+        // }
+        // return rx;
+}
  
 static void print_usage(const char *prog)
 {
@@ -307,18 +514,26 @@ int main(int argc, char *argv[])
         printf("max speed: %d Hz (%d KHz)\n", speed, speed/1000);
 
         //------------------END of SET UP---------------//
-        uint8_t econ1Val = readControlRegister(fd, 31); //read what the ECON1 register holds 
+        // uint8_t econ1Val = readControlRegister(fd, 31); //read what the ECON1 register holds 
 
-        //ensure only the last two bits are cleared 
-        econ1Val &= ~(3);
+        // //ensure only the last two bits are cleared 
+        // econ1Val &= ~(3);
         
-        writeControlRegister(rd, 31, econ1Val);
+        // writeControlRegister(fd, 31, econ1Val);
 
-        for(int i = 0; i < 32; i++){
-            printf("%d:\n", i);
-            readControlRegister(fd, i);
-        }
-       
+        // for(int i = 0; i < 32; i++){
+        //     printf("%d:\n", i);
+        //     readControlRegister(fd, i);
+        // }
+        uint8_t econ2Val = readControlRegister(fd, 30);
+
+        econ2Val |= 128;
+
+        writeControlRegister(fd,30,econ2Val);
+
+        writeBufferMemory(fd,["\r"]);
+
+        readBufferMemory(fd);
     
         close(fd);
  
