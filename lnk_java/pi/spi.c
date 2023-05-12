@@ -170,16 +170,20 @@ static void writeControlRegister(int fd, uint8_t regAddress, uint8_t data)
         puts("");
 }
 
-int* readBufferMemory(int fd)
+uint8_t* readBufferMemory(int fd)
 {
         int ret = 0;
-        int bufferSize = 100;
+        int bufferSize = 1000;
         uint8_t opCode = 1;
         uint8_t arg = 26;
         uint8_t tx[] = {
             createByte(opCode, arg)
         };
-        int* rx = (int*)calloc(bufferSize, sizeof(uint8_t));
+        puts("Right before the calloc is called?");
+
+        uint8_t* rx = (uint8_t*)calloc(bufferSize, sizeof(uint8_t));
+
+        puts("Is is a probelm with making the calloc?");
 
         if(rx == NULL){
             puts("Memory allocation failed");
@@ -207,15 +211,18 @@ int* readBufferMemory(int fd)
         memset(&tr, 0, sizeof(tr)); //Holds the parameters for the SPI structure
         tr.tx_buf = (unsigned long)tx;
         tr.rx_buf = (unsigned long)rx;
-        tr.len = ARRAY_SIZE(tx);
+        tr.len = bufferSize;
         tr.delay_usecs = delay;
         tr.speed_hz = speed;
         tr.bits_per_word = bits;
         tr.cs_change = 0; //we only need to see how the regester looks like 
 
         ret = ioctl(fd, SPI_IOC_MESSAGE(1), &tr);
+        
+        puts("Is it a problem with receving the data into the buffer");
+
         if (ret < 1)
-                pabort("can't send spi message");
+            pabort("can't send spi message");
                 
         //use this for debugging for now
 
@@ -470,9 +477,14 @@ int main(int argc, char *argv[])
         int size = strlen(cmd);
         // int size = sizeof(cmd) / sizeof(cmd[0]);
 
+
+        puts("About to write to the buffer memory");
         writeBufferMemory(fd,cmd, size);
 
-        int *output = readBufferMemory(fd);
+        puts("About to read to the buffer memory");
+        uint8_t *output = readBufferMemory(fd); //error with the malloc is present here
+
+        puts("Done reading");
     
         close(fd);
  
