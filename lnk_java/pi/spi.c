@@ -380,6 +380,21 @@ void initilization(int fd, uint16_t rBufSt, uint16_t rBufEd){
         writeControlRegister(fd, rBuffNdL_Address, rBuffNdL_Data);
         writeControlRegister(fd, rBuffNdH_Address, rBuffNdH_Data);
 
+        // incorporate filters 
+
+        uint8_t EstatRegAddress = 0x1D;
+
+        // don't want to do anything else until the start up timer has been finished
+        int startUpTimer = 1;
+
+        while (startUpTime) {
+                uint8_t EstatReg_Data = readControlRegister(fd, EstatRegAddress);
+                if(EstatReg_Data & (1 << 0)){
+                        startUpTimer = 0;
+                }
+        }
+        
+
 
 }
 
