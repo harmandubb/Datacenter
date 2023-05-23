@@ -44,11 +44,14 @@ void spi_transfer(int fd, uint8_t *data, int length){
 }
 
 
-
+/**
+ * @brief               Combines the op code and related arugement to be 1 byte to be trasnfered to spi bus
+ * 
+ * @param opCode        2 bit code used to start command for the module 
+ * @param arguement     5 bits arguement code be combined with op code
+*/
 uint8_t createInstruction(uint8_t opCode, uint8_t argument){
         uint8_t output = ((opCode << 5) | argument);
-
-        // printf("The Created instruction is: %d\n", output);
 
         return output; 
 }
@@ -61,30 +64,65 @@ uint8_t createInstruction(uint8_t opCode, uint8_t argument){
  */
 void readControlReg(int fd, uint8_t *data, uint8_t regAddress){
         *data = createInstruction(0, regAddress);
-
-        // printf("Read Control Reg input: %d\n", *data);
-
         spi_transfer(fd, data, 2);
-
-        // printf("First output after reading: %d\n", data[0]);
-        // printf("Secound output after reading: %d\n", data[1]);
 }
+
+/**
+ * @brief               Writes some given data to the specified register 
+ * 
+ * @param fd            File descriptor to SPI bus
+ * @param data          Memory to which the SPI transfer uses to store communication 
+ * @param reg           Register address that is to be updated
+ * @param input         Value that is to be written to the register
+ * 
+*/
 
 void writeControlReg(int fd, uint8_t *data, uint8_t reg, uint8_t input){
         data[0] = createInstruction(2,reg);
         data[1] = input;
 
-        printf("The instruction is: %d\n", data[1]);
-        printf("The value to write is: %d\n", data[0]);
-
         spi_transfer(fd,data,2);
 }
 
+/**
+ * @brief       Soft resets all registers in the the ethernet module    
+ * 
+ * @param fd    File descriptor to the SPI buss
+ * 
+*/
 void resetCommand(int fd){
         uint8_t data[2] = {0}; 
         data[0] = 0xFF;
         spi_transfer(fd, data, 2);
 }
+
+uint8_t* writeBufferMemory(int fd, uint8_t *message, int length){
+        uint8_t* data = (uint8_t*) malloc((length + 1)*sizeof(uint8_t));
+        if(data == NULL){
+                perror("Memory Allocation Failed while writing to buffer memory");
+                return NULL;
+        } else {
+                data[0] = 0x7A;
+                for (int i = 0; i < length; i++){
+                        data[i+1] = message[i];
+                }
+                spi_transfer(fd, data,length+1); //Check if the cs line needs to be change option needs to be changed because of the writing buffer needs to continuously write to the buffer
+                return data;
+        }
+}
+
+uint8_t* readBufferMemory(int fd){
+        int length = 10000;
+        uint8_t* data = (uint8_t*) calloc(length,sizeof(uint8_t));
+        if (data == NULL){
+                perror("Memory Allocation Failed while reading buffer memory");
+                return NULL;
+        } else {
+                data[0] = 0x3A;
+                spi_transfer(fd, data, length); //Check if there needs to be a condition in the spi_transfer function that breaks from the loop somehow if the read is not giving anything for a significant amount of time. 
+        }
+}
+        
 
 int main(int argc, char * argv[]){
         int fd; 
