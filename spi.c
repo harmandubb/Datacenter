@@ -17,6 +17,7 @@ uint8_t bits = 8;
 #define ECON2REG 0x1E
 #define ESTATREG 0x1D
 #define EIRREG 0x1C
+#define EIEREG 0x1B
 
 
 
@@ -166,6 +167,7 @@ void switchRegBank(int fd, uint8_t bankNum){
 void spiInitilization(int fd){
         uint8_t data[2] = {0};
 
+
         // Initializing the receive buffer bounds
         switchRegBank(fd,0);
 
@@ -197,41 +199,48 @@ void spiInitilization(int fd){
 
         writeControlReg(fd,data,0x00,macon1Val);
 
-        //ethernet packet config 
+        // switchRegBank(fd,2);
+        // checkReg(fd,0x03, "MACON4");
+
+        //ethernet packet config   
         readControlReg(fd, data, 0x02);
         uint8_t macon3Val = data[1];
 
         macon3Val &= ~(1); // clearing FULDPX
-        macon3Val |= 0xF2; //setting PADCFG, TXCRCEN, FRMLNEN
+        // macon3Val |= 0xF2; //setting PADCFG, TXCRCEN, FRMLNEN
+        macon3Val |= 0xF0; //setting PADCFG, TXCRCEN
 
         writeControlReg(fd,data,0x02,macon3Val);
 
         //Configuring Macon4
-        readControlReg(fd, data, 0x03);
-        uint8_t macon4Val = data[1];
+        switchRegBank(fd,2);
+        writeControlReg(fd,data,0x03,0x40);
 
-        macon4Val |= 0x40;
-
-        writeControlReg(fd,data,0x03,macon4Val);
-
-        //Program max frame
+        //Program max frame -- default recomendded is 1518 bytes
         writeControlReg(fd,data,0x0A,0xEE);
+        // checkReg(fd,0x0A, "MAMXFLL");
         writeControlReg(fd,data,0x0B,0x05);
+        // checkReg(fd,0x0B, "MAMXFLH");
 
         //configure Back-to-back inter-packet gap register
         writeControlReg(fd,data,0x04,0x12); //used recommended settings of 12h as in the document
+        // checkReg(fd,0x04, "MABBIPG");
 
         //configure non-back-to-back register 
         writeControlReg(fd,data,0x06,0x0C); //page 34 point 7
+        // checkReg(fd,0x06,"MAIPGH");
 
         //configure local mac address
         switchRegBank(fd,3);
-        writeControlReg(fd,data,0x04,0xCF); //Least Significant
+        writeControlReg(fd,data,0x04,0xCE); //Least Significant
         writeControlReg(fd,data,0x05,0xAF);
         writeControlReg(fd,data,0x02,0xB0);
         writeControlReg(fd,data,0x03,0xDF);
         writeControlReg(fd,data,0x00,0x63);
         writeControlReg(fd,data,0x01,0x88); //Most Significant
+        //Imac's mac address: 88:63:df:b0:af:cf
+        // made up mac address for the module: 88:63:df:b0:af:ce
+        //order of mac address registers has been confrimed 
 }
 
 void splitByte(uint8_t byte, uint8_t* split){
@@ -239,14 +248,28 @@ void splitByte(uint8_t byte, uint8_t* split){
         split[1] = byte & 0x0F;
 }
 
+void splitWord(uint16_t word, uint8_t* split){
+        split[0] = (word & 0xFF00) >> 8;
+        split[1] = word & 0x00FF;
+}
+
+void checkReg(int fd, uint8_t reg, char name[]){
+        uint8_t data[2] = {0};
+        readControlReg(fd,data,reg);
+        puts(name);
+        printf("The value of the register is %.2X\n",data[1]);
+}
+
 uint16_t transmitPacket(int fd, uint16_t transmitStartPtr, uint8_t* srcMacAddress, char message[]){
         uint8_t split[2];
         uint8_t data[2] = {0};
         //Set ETXST
-        splitByte(transmitStartPtr, split);
+        splitWord(transmitStartPtr, split);
         switchRegBank(fd,0);
         writeControlReg(fd, data,0x04,split[1]);
+        checkReg(fd,0x04,"ETXSTL");
         writeControlReg(fd,data,0x05,split[0]);
+        checkReg(fd,0x05,"ETXSTH");
 
         //Writing the control byte
         data[0] = 0x0E;
@@ -266,6 +289,7 @@ uint16_t transmitPacket(int fd, uint16_t transmitStartPtr, uint8_t* srcMacAddres
         //Type/length input here : Typically length is sent due to being less than 1500 in size
         int messageSize = strlen(message);
 
+
         uint8_t lengthL = messageSize & 0x00FF;
         uint8_t lengthH = (messageSize & 0xFF00) >> 8;
 
@@ -274,95 +298,181 @@ uint16_t transmitPacket(int fd, uint16_t transmitStartPtr, uint8_t* srcMacAddres
         data[0] = lengthL;
         writeBufferMemory(fd,data,1);
 
+        messageSize = strlen(message);
+
         //Data to be sent
         writeBufferMemory(fd,message,messageSize);
 
 
         //transmit end ptr set 
-        uint16_t transmitEndPtr = transmitStartPtr + 1 + 6 + 6 + 6 + 2 + messageSize; //transmitStartPtr + control byte + Dest Mac + Src Mac + Length/Type (2 byte) + message length 
+        uint16_t transmitEndPtr = transmitStartPtr + 1 + 6 + 6 + 2 + messageSize-1; //transmitStartPtr + control byte + Dest Mac + Src Mac + Length/Type (2 byte) + message length 
 
-        splitByte(transmitEndPtr, split);
+        splitWord(transmitEndPtr, split);
 
         //Set the ETXND ptr
         switchRegBank(fd,0);
         writeControlReg(fd,data,0x06,split[1]);
+        checkReg(fd,0x06,"ETXNDL");
         writeControlReg(fd,data,0x07,split[0]);
+        checkReg(fd,0x07,"ETXNDH");
+        //The logic for the end of the pointer checks out
 
         //Clear EIR.TXIF
-        readControlReg(fd, data, 0x1C);
-        uint8_t TXIF_Val = data[0];
-        TXIF_Val &= ~(0x08);
-        writeControlReg(fd,data,0x1C,TXIF_Val);
+        readControlReg(fd, data, EIRREG);
+        uint8_t TXIF_Val = data[1];
+        TXIF_Val &= ~(0x08) + ~(0x20);
+        writeControlReg(fd,data,EIRREG,TXIF_Val);
+        checkReg(fd,EIRREG,"EIR"); //---- 0---
 
-        //Set EIE.TXIW and EIE.INTIE
-        readControlReg(fd, data,0x1B);
-        uint8_t EIE_Val = data[0];
-        EIE_Val |= 0x88;
-        writeControlReg(fd,data,0x1B,EIE_Val);
+        //Set EIE.TXIE and EIE.INTIE
+        readControlReg(fd, data,EIEREG);
+        uint8_t EIE_Val = data[1];
+        EIE_Val |= 0x8A;
+        writeControlReg(fd,data,EIEREG,EIE_Val);
+        checkReg(fd,EIEREG, "EIE"); //1000 1010 or 8A
 
         //Set ECON1.TXRTS 
-        readControlReg(fd,data,0x1F);
-        uint8_t ECON1_Val = data[0];
+        readControlReg(fd,data,ECON1REG);
+        uint8_t ECON1_Val = data[1];
+        ECON1_Val &= ~(0xC0);
         ECON1_Val |= 0x08;
-        writeControlReg(fd,data,0x1F,ECON1_Val);
+        writeControlReg(fd,data,ECON1REG,ECON1_Val);
+
+        checkReg(fd,ECON1REG, "ECON1"); //The TRTS bit clears before another read can be done
 
         return transmitEndPtr;
 }
 
-bool checkTransmission(int fd, uint8_t transmitEndPtr){
-        uint8_t data[7] = {0};
+void readBuffer(int fd, uint16_t startReadPtr, uint8_t* dataStorage, int dataLen){
         uint8_t split[2];
-        uint8_t TXRTS_Cleared = 0;
+        uint8_t data[2] = {0};
 
-        
-        readControlReg(fd, data, ECON1REG);
-        TXRTS_Cleared = (data[0] & 0x08) == 0;
-
-        if (!TXRTS_Cleared){
-                return false;
-        }
-
-        //Check if EIR.TXIF is set
-        //All good if set
-        readControlReg(fd, data, EIRREG);
-        uint8_t EIR_Val = data[0];
-        uint8_t TXIF_Set = (EIR_Val & 0x08) == 1;
-
-        if (!TXIF_Set){
-                return false;
-        }
-
-        //Check if ESTAT.TXABRT is cleared 
-        //All good if not set 
-        readControlReg(fd, data, ESTATREG);
-        uint8_t ESTAT_Val = data[0];
-        uint8_t TXABRT_Cleared = (ESTAT_Val & 0x02) == 0;
-
-        if (!TXABRT_Cleared){
-                return false;
-        }
-
-        
-        //Reading the tranmissiotn status vector 
         switchRegBank(fd,0);
-        splitByte(transmitEndPtr+1, split);
+        splitWord(startReadPtr, split);
         //put the ERDPT at the start of the trasmission status vector
         writeControlReg(fd,data,0x00,split[1]);
         writeControlReg(fd,data,0x01,split[0]);
 
         //Enable autoincrementing in the ECON2 register
         readControlReg(fd,data,ECON2REG);
-        uint8_t ECON3_Val = data[0];
+        uint8_t ECON3_Val = data[1];
+        ECON3_Val |= 0x80;
+        writeControlReg(fd,data,ECON2REG,ECON3_Val);
+
+        // Read 8 bytes of data which is the transmission status vector
+        readBufferMemory(fd,dataStorage,dataLen);
+}
+
+void readTransmissionMessageBuffer(int fd, uint8_t transmitStartPtr, char message[]){
+        uint8_t split[2];
+        int messageLen = strlen(message);
+        uint8_t* data = (uint8_t*) calloc(messageLen, sizeof(uint8_t));
+        int messageOffset = 15;
+
+        readBuffer(fd, transmitStartPtr+messageOffset, data, messageLen);
+
+        printf("Transmission Message: \n");
+        for (int i = 0; i < messageLen; i++){
+                printf("%02X ", data[i]);
+        }
+        printf("\n");
+
+        free(data);
+}
+
+void readTransmissionPacket(int fd, uint8_t transmitStartPtr, char message[]){
+        uint8_t split[2];
+        int transmissionPacketBaseSize = 15;
+        int statusVectorSize = 7;
+        int messageLen = strlen(message);
+        int packetSize = messageLen+transmissionPacketBaseSize+statusVectorSize;
+        uint8_t* data = (uint8_t*) calloc(packetSize, sizeof(uint8_t));
+        int messageOffset = 15;
+
+        readBuffer(fd, transmitStartPtr, data, packetSize);
+
+        printf("Transmission Packet: \n");
+        for (int i = 0; i < packetSize; i++){
+                printf("%02X ", data[i]);
+        }
+        printf("\n");
+
+        free(data);
+}
+
+bool checkTransmission(int fd, uint8_t transmitEndPtr){
+        uint8_t data[7] = {0};
+        uint8_t split[2];
+        uint8_t TXRTS_Cleared = 0;
+        int statusVectorOffset = 0;
+        bool success = true;
+
+        
+        readControlReg(fd, data, ECON1REG);
+        TXRTS_Cleared = (data[1] & 0x08) == 0;
+
+        if (!TXRTS_Cleared){
+                success = false;
+        }
+
+        //Check if ESTAT.TXABRT is cleared 
+        //All good if not set 
+        readControlReg(fd, data, ESTATREG);
+        uint8_t ESTAT_Val = data[1];
+        uint8_t TXABRT_Cleared = (ESTAT_Val & 0x02) == 0;
+
+        if (!TXABRT_Cleared){
+                success = false;
+        }
+
+        //Check if EIR.TXIF is set
+        //All good if set
+        readControlReg(fd, data, EIRREG);
+        uint8_t EIR_Val = data[1];
+        uint8_t TXIF_Set = (EIR_Val & 0x08) == 1;
+
+        if (!TXIF_Set){
+                success = false;
+        }
+
+        //Check EIE register to see if transimision abort occured
+        readControlReg(fd, data, EIEREG);
+        uint8_t EIE_Val = data[1];
+
+        
+
+        //Reading the tranmissiotn status vector 
+        switchRegBank(fd,0);
+        splitWord(transmitEndPtr+statusVectorOffset, split);
+        //put the ERDPT at the start of the trasmission status vector
+        writeControlReg(fd,data,0x00,split[1]);
+        writeControlReg(fd,data,0x01,split[0]);
+
+        //Enable autoincrementing in the ECON2 register
+        readControlReg(fd,data,ECON2REG);
+        uint8_t ECON3_Val = data[1];
         ECON3_Val |= 0x80;
         writeControlReg(fd,data,ECON2REG,ECON3_Val);
 
         // Read 8 bytes of data which is the transmission status vector
         readBufferMemory(fd,data,7);
 
+        // q: if the transmission is successful, the first byte of the transmission status vector should be 0x00?
+        // a: yes, if the transmission is successful, the first byte of the transmission status vector should be 0x00
+
+        // q: what does it mean for multi-byte fiels to be written in little-endian format?
+        // a: little endian means that the least significant byte is stored first.
+
+        // q: in the above data array and knowing the bytes are returned in little endian format what would the data[0] give me in terms of bit designation?
+        // a: data[0] would give you the lowest byte of the transmission status vector
+
         printf("Transmission Status Vector: (lowest byte to highest) \n");
         for (int i = 0; i < 7; i++){
-                printf("%02X\n", data[i]);
+                printf("%02X ", data[i]);
         }
+        printf("\n");
+
+        return success;
 
         //good to do a actual test at this point. 
 }
@@ -372,6 +482,7 @@ bool checkTransmission(int fd, uint8_t transmitEndPtr){
 int main(int argc, char * argv[]){
         int fd; 
         uint8_t data[2] = {0};
+        bool success = false; 
 
         // Opent he SPI bus file
         fd = open ("/dev/spidev0.0", O_RDWR);
@@ -404,11 +515,17 @@ int main(int argc, char * argv[]){
 
         spiInitilization(fd);
 
-        uint8_t srcMacAddress[6] = {0x00,0x00,0x00,0x00,0x00,0x00};
+        //88:63:df:b0:af:ce
+        uint8_t srcMacAddress[6] = {0x88,0x63,0xDF,0xB0,0xAF,0xCE};
+
+
 
         uint16_t endTransmitPtr = transmitPacket(fd,0x0000,srcMacAddress,"Hello World");
 
-        bool success = checkTransmission(fd,endTransmitPtr);
+        readTransmissionPacket(fd,0x0000,"Hello World");
+        // readTransmissionMessageBuffer(fd,0x0000,"Hello World");
+
+        success = checkTransmission(fd,endTransmitPtr);
 
         if (success){
                 printf("Transmission Successful\n");
