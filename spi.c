@@ -293,7 +293,8 @@ void spiInitilization(int fd, uint8_t macAddressLocal[6]){
         readControlReg(fd, data, MACON3REG);
         uint8_t MACON3_Val = data[1];
 
-        MACON3_Val = 0xF2;
+        // MACON3_Val = 0xF2;
+        MACON3_Val = 0x12;
 
         writeControlReg(fd,data,MACON3REG,MACON3_Val);
 
@@ -395,7 +396,14 @@ uint16_t transmitPacket(int fd, uint16_t* trasmitStartPtr, uint8_t srcMACAddress
         checkReg(fd, EIRREG, "EIR");
 
         //type/length
-        splitWord(messageLen, split);
+        // splitWord(messageLen, split);
+        // splitWord(68, split);
+        // splitWord(64, split);
+        // splitWord(60, split);
+        // splitWord(48, split);
+        // splitWord(12, split);
+        splitWord(11, split);
+
         writeBufferMemory(fd, split, 2);
 
         checkReg(fd, EIRREG, "EIR");
@@ -553,7 +561,7 @@ bool verifyTransmission(int fd, uint8_t transmitEndPtr){
         }
         printf("\n");
 
-
+        return success;
 }
 
 
@@ -613,7 +621,7 @@ int main(int argc, char * argv[]){
 
         // readTransmissionMessageBuffer(fd,transmitStartPtr,transmissionMessage);
 
-        verifyTransmission(fd,transmitEndPtr);
+        success = verifyTransmission(fd,transmitEndPtr);
 
 
 
